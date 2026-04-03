@@ -53,6 +53,13 @@ export interface UseBitableImportReturn {
  * - actionKey: searchRecords
  * - outputMode: unary
  * - input.required: []
+ * - 字段映射说明:
+ *   | 多维表格字段 | 妙搭字段 | 类型 |
+ *   |-------------|---------|------|
+ *   | 日期 | recordDate | string (YYYY-MM-DD) |
+ *   | 平台 | platform | string |
+ *   | SKU | sku | string |
+ *   | 消耗金额 | amount | number |
  * - output.fields: [
  *     records: Array<{
  *       id: string,
