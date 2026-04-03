@@ -98,9 +98,12 @@ export function useBitableImport(): UseBitableImportReturn {
       // 转换数据格式
       for (const item of pageRecords) {
         const record = item.record;
-        // 日期是 Unix 时间戳（毫秒），转换为 YYYY-MM-DD 格式
+        // 日期是 Unix 时间戳（毫秒），转换为 YYYY-MM-DD 格式（使用本地时间避免时区偏差）
         const dateObj = new Date(record['日期']);
-        const dateStr = dateObj.toISOString().split('T')[0];
+        const year = dateObj.getFullYear();
+        const month = String(dateObj.getMonth() + 1).padStart(2, '0');
+        const day = String(dateObj.getDate()).padStart(2, '0');
+        const dateStr = `${year}-${month}-${day}`;
 
         // 平台和 SKU 是 { text: string } 格式
         const platform = (record['平台'] as { text: string })?.text || '';
