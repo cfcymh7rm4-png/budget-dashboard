@@ -98,27 +98,50 @@ export function useBitableImport(): UseBitableImportReturn {
       // 转换数据格式
       for (const item of pageRecords) {
         const record = item.record;
+        logger.debug('多维表格原始记录:', JSON.stringify(record));
+
         // 日期是 Unix 时间戳（毫秒），转换为 YYYY-MM-DD 格式（使用本地时间避免时区偏差）
-        const dateObj = new Date(record['日期']);
+        const dateValue = record['日期'];
+        if (!dateValue) {
+          logger.warn('记录缺少日期字段');
+          continue;
+        }
+        const dateObj = new Date(dateValue);
         const year = dateObj.getFullYear();
         const month = String(dateObj.getMonth() + 1).padStart(2, '0');
         const day = String(dateObj.getDate()).padStart(2, '0');
         const dateStr = `${year}-${month}-${day}`;
 
         // 平台和 SKU 是 { text: string } 格式
-        const platform = (record['平台'] as { text: string })?.text || '';
-        const sku = (record['SKU'] as { text: string })?.text || '';
-        const amount = record['消耗金额'] as number;
+        const platformData = record['平台'] as { text: string } | undefined;
+        const skuData = record['SKU'] as { text: string } | undefined;
+        const amount = record['消耗金额'] as number | undefined;
 
-        if (platform && sku && amount !== undefined) {
-          records.push({
-            recordDate: dateStr,
-            platform,
-            sku,
-            amount,
-            source: '多维表格导入',
-          });
+        const platform = platformData?.text || '';
+        const sku = skuData?.text || '';
+
+        logger.debug(`解析结果: 日期=${dateStr}, 平台=${platform}, SKU=${sku}, 金额=${amount}`);
+
+        if (!platform) {
+          logger.warn('记录缺少平台字段');
+          continue;
         }
+        if (!sku) {
+          logger.warn('记录缺少SKU字段');
+          continue;
+        }
+        if (amount === undefined || amount === null) {
+          logger.warn('记录缺少消耗金额字段');
+          continue;
+        }
+
+        records.push({
+          recordDate: dateStr,
+          platform,
+          sku,
+          amount,
+          source: '多维表格导入',
+        });
       }
 
       hasMore = more;
