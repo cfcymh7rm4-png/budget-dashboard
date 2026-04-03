@@ -147,12 +147,18 @@ export const budget = pgTable("budget", {
   pgPolicy("service_role_bypass_policy", { as: "permissive", for: "all", to: ["service_role_workspace_aadjzu433eybu"] }),
 ]);
 
+// Synced table: data is auto-synced from external source. Do not rename or delete this table.
 export const consumptionRecord = pgTable("consumption_record", {
   id: uuid().defaultRandom().notNull(),
+  // Synced field: auto-synced, do not modify or delete
   recordDate: date("record_date").notNull(),
-  platform: varchar({ length: 32 }).notNull(),
-  sku: varchar({ length: 32 }).notNull(),
+  // Synced field: auto-synced, do not modify or delete
+  platform: varchar({ length: 128 }).notNull(),
+  // Synced field: auto-synced, do not modify or delete
+  sku: varchar({ length: 128 }).notNull(),
+  // Synced field: auto-synced, do not modify or delete
   amount: numeric({ precision: 10, scale: 2 }).default('0').notNull(),
+  // Synced field: auto-synced, do not modify or delete
   source: varchar({ length: 32 }).default('多维表格导入'),
   // System field: Creation time (auto-filled, do not modify)
   createdAt: customTimestamptz('_created_at').default(sql`CURRENT_TIMESTAMP`).notNull(),
@@ -162,6 +168,7 @@ export const consumptionRecord = pgTable("consumption_record", {
   updatedAt: customTimestamptz('_updated_at').default(sql`CURRENT_TIMESTAMP`).notNull(),
   // System field: Updater (auto-filled, do not modify)
   updatedBy: userProfile("_updated_by"),
+  // Synced field: auto-synced, do not modify or delete
   bitableRecordId: varchar("bitable_record_id", { length: 64 }),
 }, (table) => [
   index("idx_consumption_record_date").using("btree", table.recordDate.asc().nullsLast().op("date_ops")),
