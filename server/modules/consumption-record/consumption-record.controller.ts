@@ -93,7 +93,7 @@ export class ConsumptionRecordController {
   @Post('import-from-bitable')
   async importFromBitable(@Req() req: Request): Promise<ImportFromBitableResponse> {
     const PLUGIN_INSTANCE_ID = 'feishu_bitable_import_daily_cost_data_1';
-    const records: Array<{ recordDate: string; platform: string; sku: string; amount: number }> = [];
+    const records: Array<{ recordDate: string; platform: string; sku: string; amount: number; bitableRecordId: string }> = [];
     
     try {
       this.logger.log('开始从多维表格获取数据...');
@@ -183,15 +183,19 @@ export class ConsumptionRecordController {
           
           this.logger.debug(`解析结果: platform=${platform}, sku=${sku}, amount=${amount}`);
           
-          if (platform && sku && amount !== undefined && amount !== null) {
+          // 获取 Base 表记录 ID（飞书多维表格记录 ID）
+          const bitableRecordId = item.id;
+          
+          if (platform && sku && amount !== undefined && amount !== null && bitableRecordId) {
             records.push({
               recordDate: dateStr,
               platform,
               sku,
               amount,
+              bitableRecordId,
             });
           } else {
-            this.logger.debug(`跳过无效记录: platform=${platform}, sku=${sku}, amount=${amount}`);
+            this.logger.debug(`跳过无效记录: platform=${platform}, sku=${sku}, amount=${amount}, bitableRecordId=${bitableRecordId}`);
           }
         }
         

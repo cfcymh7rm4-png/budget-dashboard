@@ -31,11 +31,15 @@ export class ConsumptionRecordService {
       const record = records[i];
       try {
         // 使用 ON CONFLICT DO UPDATE 实现插入或更新
+        // 使用 bitable_record_id 作为唯一标识进行冲突处理
         await this.db.execute(sql`
-          INSERT INTO consumption_record (record_date, platform, sku, amount, source)
-          VALUES (${record.recordDate}, ${record.platform}, ${record.sku}, ${record.amount}, '多维表格导入')
-          ON CONFLICT (record_date, platform, sku)
+          INSERT INTO consumption_record (record_date, platform, sku, amount, source, bitable_record_id)
+          VALUES (${record.recordDate}, ${record.platform}, ${record.sku}, ${record.amount}, '多维表格导入', ${record.bitableRecordId || null})
+          ON CONFLICT (bitable_record_id)
           DO UPDATE SET
+            record_date = EXCLUDED.record_date,
+            platform = EXCLUDED.platform,
+            sku = EXCLUDED.sku,
             amount = EXCLUDED.amount,
             source = EXCLUDED.source,
             _updated_at = CURRENT_TIMESTAMP

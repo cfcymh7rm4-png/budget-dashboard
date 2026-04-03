@@ -55,6 +55,7 @@ export interface ConsumptionRecord {
   sku: string;
   amount: number;
   source?: string;
+  bitableRecordId?: string;
 }
 
 export interface BatchSaveConsumptionRequest {
@@ -63,6 +64,7 @@ export interface BatchSaveConsumptionRequest {
     platform: string;
     sku: string;
     amount: number;
+    bitableRecordId?: string;
   }>;
 }
 
