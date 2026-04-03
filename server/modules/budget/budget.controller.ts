@@ -2,6 +2,7 @@ import { Controller, Get, Post, Query, Body, Logger } from '@nestjs/common';
 import { NeedLogin } from '@lark-apaas/fullstack-nestjs-core';
 import { BudgetService } from './budget.service';
 import type {
+  GetBudgetsRequest,
   GetBudgetsResponse,
   SaveBudgetsRequest,
   SaveBudgetsResponse,
@@ -16,7 +17,7 @@ export class BudgetController {
   constructor(private readonly budgetService: BudgetService) {}
 
   /**
-   * 获取指定月份预算配置列表
+   * 获取指定月份预算配置
    * GET /api/budgets?month=2026-04
    */
   @Get()

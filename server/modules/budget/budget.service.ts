@@ -3,12 +3,11 @@ import { DRIZZLE_DATABASE, type PostgresJsDatabase } from '@lark-apaas/fullstack
 import { budget } from '@server/database/schema';
 import { eq, and, sql } from 'drizzle-orm';
 import type {
-  GetBudgetsResponse,
+  BudgetWithProportion,
   SaveBudgetsRequest,
   SaveBudgetsResponse,
   BatchAllocateRequest,
   BatchAllocateResponse,
-  Budget,
 } from '@shared/api.interface';
 
 @Injectable()
@@ -22,18 +21,18 @@ export class BudgetService {
   /**
    * 获取指定月份预算配置列表
    */
-  async getBudgets(month: string): Promise<GetBudgetsResponse> {
-    // 获取该月总预算用于计算占比
+  async getBudgets(month: string): Promise<BudgetWithProportion[]> {
+    // 获取该月总预算
     const totalResult = await this.db
       .select({
-        total: sql<number>`SUM(${budget.amount})`,
+        total: sql<number>`COALESCE(SUM(${budget.amount}), 0)`,
       })
       .from(budget)
       .where(eq(budget.month, month));
 
-    const total = Number(totalResult[0]?.total || 1);
+    const total = Number(totalResult[0]?.total || 1); // 避免除以0
 
-    // 获取预算列表
+    // 获取各SKU预算
     const budgets = await this.db
       .select({
         id: budget.id,
@@ -51,12 +50,12 @@ export class BudgetService {
       platform: item.platform,
       sku: item.sku,
       amount: Number(item.amount),
-      proportion: Number(((Number(item.amount) / total) * 100).toFixed(2)),
+      proportion: total > 0 ? Number(((Number(item.amount) / total) * 100).toFixed(2)) : 0,
     }));
   }
 
   /**
-   * 保存预算配置
+   * 保存预算配置（批量插入或更新）
    */
   async saveBudgets(request: SaveBudgetsRequest): Promise<SaveBudgetsResponse> {
     const { month, records } = request;
@@ -80,28 +79,28 @@ export class BudgetService {
    */
   async batchAllocate(request: BatchAllocateRequest): Promise<BatchAllocateResponse> {
     const { month, platformTotal, skuRatio } = request;
-    const results: Budget[] = [];
+    const results: Array<{ month: string; platform: string; sku: string; amount: number }> = [];
 
-    // 计算每个平台每个SKU的预算
-    for (const [platform, totalAmount] of Object.entries(platformTotal)) {
-      for (const [sku, ratio] of Object.entries(skuRatio)) {
-        const amount = Math.round((totalAmount * ratio) / 100);
+    // 遍历每个平台
+    for (const [platformName, totalAmount] of Object.entries(platformTotal)) {
+      if (totalAmount <= 0) continue;
+
+      // 计算该平台的SKU分配
+      for (const [skuName, ratio] of Object.entries(skuRatio)) {
+        if (ratio <= 0) continue;
+
+        const amount = Math.round(totalAmount * ratio * 100) / 100;
 
         await this.db.execute(sql`
           INSERT INTO budget (month, platform, sku, amount)
-          VALUES (${month}, ${platform}, ${sku}, ${amount})
+          VALUES (${month}, ${platformName}, ${skuName}, ${amount})
           ON CONFLICT (month, platform, sku)
           DO UPDATE SET
             amount = EXCLUDED.amount,
             _updated_at = CURRENT_TIMESTAMP
         `);
 
-        results.push({
-          month,
-          platform,
-          sku,
-          amount,
-        });
+        results.push({ month, platform: platformName, sku: skuName, amount });
       }
     }
 
