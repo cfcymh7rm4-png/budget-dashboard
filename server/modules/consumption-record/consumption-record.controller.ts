@@ -161,17 +161,13 @@ export class ConsumptionRecordController {
           // 尝试多种可能的SKU字段名
           const skuData = (record['产品'] || record['SKU'] || record['sku'] || record['商品'] || record['商品名称']) as { text: string } | string | undefined;
           
-          // 尝试多种可能的金额字段名，处理 Currency 类型可能返回数组或字符串的情况
+          // 消耗金额现在是 { text: string } 格式，需要从 text 中解析数字
           let amount: number | undefined;
-          const rawAmount = record['消耗'] ?? record['消耗金额'] ?? record['金额'] ?? record['费用'] ?? record['cost'] ?? record['amount'];
-          if (typeof rawAmount === 'number') {
-            amount = rawAmount;
-          } else if (Array.isArray(rawAmount) && rawAmount.length > 0) {
-            // Currency 类型可能返回数组
-            amount = Number(rawAmount[0]);
-          } else if (typeof rawAmount === 'string') {
-            // 可能是带货币符号的字符串，如 "¥1000"
-            const match = rawAmount.match(/[\d.]+/);
+          const rawAmountData = record['消耗金额'] as { text: string } | undefined;
+          if (rawAmountData && typeof rawAmountData === 'object' && 'text' in rawAmountData) {
+            const amountText = rawAmountData.text;
+            // 可能是带货币符号的字符串，如 "¥1000" 或 "1000.00"
+            const match = amountText.match(/[\d.]+/);
             amount = match ? Number(match[0]) : undefined;
           }
           

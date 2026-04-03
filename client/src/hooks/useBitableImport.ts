@@ -59,15 +59,19 @@ export interface UseBitableImportReturn {
  *       record: {
  *         日期: number (Unix时间戳毫秒),
  *         平台: { text: string },
- *         产品: { text: string },  // 对应SKU
- *         消耗: number             // 对应消耗金额
+ *         SKU: { text: string },
+ *         消耗金额: { text: string },  // 金额文本，如 "¥1000" 或 "1000.00"
+ *         序号: { text: string },
+ *         SourceID: { text: string },
+ *         投放目标: { text: string },
+ *         运营: { text: string }
  *       }
  *     }>,
  *     hasMore: boolean,
  *     total: number,
  *     pageToken?: string
  *   ]
- * - 调用侧: Client
+ * - 调用侧: Server (通过 /api/consumption-records/import-from-bitable)
  */
 export function useBitableImport(): UseBitableImportReturn {
   const [progress, setProgress] = useState<ImportProgress>({
