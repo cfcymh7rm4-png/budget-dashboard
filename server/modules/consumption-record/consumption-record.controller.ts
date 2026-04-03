@@ -117,16 +117,8 @@ export class ConsumptionRecordController {
           pageSize: 500,
           pageToken,
           sort: [{ fieldName: '日期', desc: true }], // 降序获取最新数据
-          filter: {
-            conjunction: 'and',
-            conditions: [
-              {
-                fieldName: '日期',
-                operator: 'isGreater',
-                value: [startTimestamp.toString()],
-              },
-            ],
-          },
+          // 注意：DateTime 字段不支持 isGreater 配合时间戳筛选
+          // 先获取数据，然后在代码中过滤30天内的记录
         };
         
         this.logger.log(`正在获取第 ${pageNum} 页数据...`);
@@ -159,6 +151,9 @@ export class ConsumptionRecordController {
           // 日期是 Unix 时间戳（毫秒）
           const dateValue = record['日期'] as number;
           if (!dateValue) continue;
+          
+          // 只处理30天内的数据
+          if (dateValue < startTimestamp) continue;
           
           const dateObj = new Date(dateValue);
           const year = dateObj.getFullYear();
