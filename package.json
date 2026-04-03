@@ -9,7 +9,7 @@
     "customToaster": true
   },
   "scripts": {
-    "dev": "npm run upgrade && ./scripts/dev.sh",
+    "dev": "./scripts/dev.sh",
     "dev:server": "NODE_ENV=development nest start --watch",
     "dev:client": "NODE_ENV=development vite --config vite.config.ts",
     "gen:db-schema": "fullstack-cli gen-db-schema",
@@ -27,9 +27,9 @@
     "type:check": "concurrently -n \"server,client\" -c \"blue,green\" \"npm run type:check:server\" \"npm run type:check:client\"",
     "type:check:client": "tsc --noEmit --project tsconfig.app.json",
     "type:check:server": "tsc --noEmit --project tsconfig.node.json",
-    "lint": "concurrently \"npm run eslint\" \"npm run type:check\" \"npm run stylelint\"",
+    "lint": "node ./scripts/lint.js",
     "format": "prettier --write \"{server,client,test}/**/*.{js,ts,tsx,json,md}\"",
-    "upgrade": "fullstack-cli sync --disable-gen-openapi"
+    "postinstall": "fullstack-cli action-plugin init"
   },
   "dependencies": {
     "@lark-apaas/fullstack-nestjs-core": "^1.1.22",

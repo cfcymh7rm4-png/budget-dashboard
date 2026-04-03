@@ -3,7 +3,7 @@
 set -euo pipefail
 
 ROOT_DIR="$(pwd)"
-OUT_DIR="$ROOT_DIR/dist/server"
+DIST_DIR="$ROOT_DIR/dist"
 
 # 记录总开始时间
 TOTAL_START=$(node -e "console.log(Date.now())")
@@ -78,20 +78,26 @@ print_time $STEP_START
 echo ""
 
 # ==================== 步骤 4 ====================
-echo "📦 [4/5] 准备 server 依赖产物"
+echo "📦 [4/5] 准备产物"
 STEP_START=$(node -e "console.log(Date.now())")
 
-mkdir -p "$OUT_DIR/dist/client"
+# 拷贝 run.sh 到 dist/（prod 从 dist/ 启动，确保 cwd 一致性）
+cp "$ROOT_DIR/scripts/run.sh" "$DIST_DIR/"
 
-# 拷贝 HTML
-cp "$ROOT_DIR/dist/client/"*.html "$OUT_DIR/dist/client/" || true
+# 拷贝 .env 文件（如果存在）
+if [ -f "$ROOT_DIR/.env" ]; then
+  cp "$ROOT_DIR/.env" "$DIST_DIR/"
+fi
 
-# 拷贝 run.sh 文件
-cp "$ROOT_DIR/scripts/run.sh" "$OUT_DIR/"
+# 移动 client 下的 HTML 文件到 dist/dist/client，保证 views 路径在 dev/prod 下一致
+if [ -d "$DIST_DIR/client" ]; then
+  mkdir -p "$DIST_DIR/dist/client"
+  find "$DIST_DIR/client" -maxdepth 1 -name "*.html" -exec mv {} "$DIST_DIR/dist/client/" \;
+fi
 
 # 清理无用文件
-rm -rf "$ROOT_DIR/dist/scripts"
-rm -rf "$ROOT_DIR/dist/tsconfig.node.tsbuildinfo"
+rm -rf "$DIST_DIR/scripts"
+rm -rf "$DIST_DIR/tsconfig.node.tsbuildinfo"
 
 print_time $STEP_START
 echo ""
@@ -111,10 +117,10 @@ echo "构建完成"
 print_time $TOTAL_START
 
 # 输出产物信息
-DIST_SIZE=$(du -sh "$OUT_DIR" | cut -f1)
-NODE_MODULES_SIZE=$(du -sh "$OUT_DIR/node_modules" | cut -f1)
+DIST_SIZE=$(du -sh "$DIST_DIR" | cut -f1)
+NODE_MODULES_SIZE=$(du -sh "$DIST_DIR/node_modules" | cut -f1)
 echo ""
 echo "📊 构建产物统计:"
-echo "   总大小:        $DIST_SIZE"
+echo "   产物大小:        $DIST_SIZE"
 echo "   node_modules: $NODE_MODULES_SIZE"
 echo ""
