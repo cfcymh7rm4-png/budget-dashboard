@@ -5,6 +5,7 @@ import { PlatformModule } from '@lark-apaas/fullstack-nestjs-core';
 import { GlobalExceptionFilter } from './common/filters/exception.filter';
 import { ViewModule } from './modules/view/view.module';
 import { DashboardModule } from './modules/dashboard/dashboard.module';
+import { ConsumptionRecordModule } from './modules/consumption-record/consumption-record.module';
 
 @Module({
   imports: [
@@ -13,6 +14,7 @@ import { DashboardModule } from './modules/dashboard/dashboard.module';
     // ====== @route-section: business-modules START ======
     // Place all business modules here.Do NOT add fallback modules here.
     DashboardModule,
+    ConsumptionRecordModule,
     // ====== @route-section: business-modules END ======
 
     // ⚠️ @route-order: last
