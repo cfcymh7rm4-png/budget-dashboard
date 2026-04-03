@@ -144,21 +144,26 @@ export class ConsumptionRecordController {
           const dateStr = `${year}-${month}-${day}`;
           
           // 平台和产品是 { text: string } 格式
+          // 兼容两种可能的字段名：'SKU'/'产品' 和 '消耗金额'/'消耗'
           const platformData = record['平台'] as { text: string } | undefined;
-          const skuData = record['产品'] as { text: string } | undefined;
-          const amount = record['消耗'] as number | undefined;
+          const skuData = (record['产品'] || record['SKU']) as { text: string } | undefined;
+          const amount = (record['消耗'] ?? record['消耗金额']) as number | undefined;
+          
+          this.logger.debug(`原始记录: 平台=${JSON.stringify(platformData)}, SKU/产品=${JSON.stringify(skuData)}, 消耗=${amount}`);
           
           const rawPlatform = platformData?.text || '';
           const platform = this.normalizePlatform(rawPlatform);
           const sku = skuData?.text || '';
           
-          if (platform && sku && amount !== undefined) {
+          if (platform && sku && amount !== undefined && amount !== null) {
             records.push({
               recordDate: dateStr,
               platform,
               sku,
               amount,
             });
+          } else {
+            this.logger.debug(`跳过无效记录: platform=${platform}, sku=${sku}, amount=${amount}`);
           }
         }
         
