@@ -28,23 +28,25 @@ export interface FeishuBitableImportDailyCostData1Input {
 }
 
 export interface FeishuBitableImportDailyCostData1Output {
+  /** 记录列表 */
+  records: {
+  id: string;
+  record: {
+  消耗: number;
+  日期: number;
+  平台: {
+  text: string;
+};
+  产品: {
+  text: string;
+};
+};
+}[];
   /** 是否还有更多数据 */
   hasMore: boolean;
   /** 下一页的分页标记 */
   pageToken?: string;
   /** 总记录数 */
   total?: number;
-  /** 记录列表 */
-  records: {
-  id: string;
-  record: {
-  日期: number;
-  平台: {
-  text: string;
-};
-  SKU: unknown;
-  消耗金额: number;
-};
-}[];
 }
 // ---- end:feishu_bitable_import_daily_cost_data_1 ----
