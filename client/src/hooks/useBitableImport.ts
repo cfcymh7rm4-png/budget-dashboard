@@ -11,6 +11,25 @@ import { toast } from 'sonner';
 
 const PLUGIN_INSTANCE_ID = 'feishu_bitable_import_daily_cost_data_1';
 
+// 平台工具名称映射表：将具体工具归拢到所属大平台
+const PLATFORM_TOOL_MAP: Record<string, string> = {
+  // 抖音系工具
+  'dou+': '抖音',
+  '竞价种草通': '抖音',
+  '竞价A3': '抖音',
+  '热推': '抖音',
+  // 微信系工具
+  '二次推广': '微信',
+};
+
+/**
+ * 将工具名称归拢到所属平台
+ * 例如：dou+ → 抖音，二次推广 → 微信
+ */
+function normalizePlatform(toolName: string): string {
+  return PLATFORM_TOOL_MAP[toolName] || toolName;
+}
+
 export interface ImportProgress {
   status: 'idle' | 'fetching' | 'saving' | 'completed' | 'error';
   total: number;
@@ -118,7 +137,9 @@ export function useBitableImport(): UseBitableImportReturn {
         const skuData = record['产品'] as { text: string } | undefined;
         const amount = record['消耗'] as number | undefined;
 
-        const platform = platformData?.text || '';
+        // 将工具名称归拢到所属大平台（如 dou+ → 抖音）
+        const rawPlatform = platformData?.text || '';
+        const platform = normalizePlatform(rawPlatform);
         const sku = skuData?.text || '';
 
         logger.debug(`解析结果: 日期=${dateStr}, 平台=${platform}, SKU=${sku}, 金额=${amount}`);
