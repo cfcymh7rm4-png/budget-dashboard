@@ -40,8 +40,8 @@ export interface UseBitableImportReturn {
  *       record: {
  *         日期: number (Unix时间戳毫秒),
  *         平台: { text: string },
- *         SKU: { text: string },
- *         消耗金额: number
+ *         产品: { text: string },  // 对应SKU
+ *         消耗: number             // 对应消耗金额
  *       }
  *     }>,
  *     hasMore: boolean,
@@ -113,9 +113,10 @@ export function useBitableImport(): UseBitableImportReturn {
         const dateStr = `${year}-${month}-${day}`;
 
         // 平台和 SKU 是 { text: string } 格式
+        // 字段映射：平台->平台, 产品->SKU, 消耗->消耗金额
         const platformData = record['平台'] as { text: string } | undefined;
-        const skuData = record['SKU'] as { text: string } | undefined;
-        const amount = record['消耗金额'] as number | undefined;
+        const skuData = record['产品'] as { text: string } | undefined;
+        const amount = record['消耗'] as number | undefined;
 
         const platform = platformData?.text || '';
         const sku = skuData?.text || '';
@@ -127,11 +128,11 @@ export function useBitableImport(): UseBitableImportReturn {
           continue;
         }
         if (!sku) {
-          logger.warn('记录缺少SKU字段');
+          logger.warn('记录缺少产品字段(SKU)');
           continue;
         }
         if (amount === undefined || amount === null) {
-          logger.warn('记录缺少消耗金额字段');
+          logger.warn('记录缺少消耗字段(消耗金额)');
           continue;
         }
 
