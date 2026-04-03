@@ -2,8 +2,8 @@ import { useState, useCallback } from 'react';
 import { capabilityClient } from '@lark-apaas/client-toolkit';
 import { logger } from '@lark-apaas/client-toolkit/logger';
 import type {
-  FeishuBitableImportDailyCostData1SearchrecordsOutput,
-  FeishuBitableImportDailyCostData1SearchrecordsInput,
+  FeishuBitableImportDailyCostData1Output,
+  FeishuBitableImportDailyCostData1Input,
 } from '@shared/plugin-types';
 import type { ConsumptionRecord, BatchSaveConsumptionResponse } from '@shared/api.interface';
 import { axiosForBackend } from '@lark-apaas/client-toolkit/utils/getAxiosForBackend';
@@ -78,7 +78,7 @@ export function useBitableImport(): UseBitableImportReturn {
     let total = 0;
 
     while (hasMore) {
-      const input: FeishuBitableImportDailyCostData1SearchrecordsInput = {
+      const input: FeishuBitableImportDailyCostData1Input = {
         pageSize: 500,
         pageToken,
         sort: [{ fieldName: '日期', desc: false }],
@@ -86,7 +86,7 @@ export function useBitableImport(): UseBitableImportReturn {
 
       const response = await capabilityClient
         .load(PLUGIN_INSTANCE_ID)
-        .call<FeishuBitableImportDailyCostData1SearchrecordsOutput>('searchRecords', input as Record<string, unknown>);
+        .call<FeishuBitableImportDailyCostData1Output>('searchRecords', input as Record<string, unknown>);
 
       // 按 outputSchema 解析返回结果
       const { records: pageRecords, hasMore: more, pageToken: nextToken, total: responseTotal } = response;
