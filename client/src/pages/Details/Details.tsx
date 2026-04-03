@@ -251,7 +251,7 @@ const Details = () => {
   };
 
   // 完成率状态
-  const getCompletionRateStatus = (rate: number): 'default' | 'destructive' | 'secondary' => {
+  const getCompletionRateStatus = (rate: number): 'default' | 'destructive' | 'outline' | 'secondary' => {
     if (rate > 100) return 'destructive';
     if (rate > 90) return 'secondary';
     return 'default';
