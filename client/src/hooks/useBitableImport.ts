@@ -91,92 +91,21 @@ export function useBitableImport(): UseBitableImportReturn {
   }, []);
 
   const fetchAllRecords = useCallback(async (): Promise<ConsumptionRecord[]> => {
-    const records: ConsumptionRecord[] = [];
-    let pageToken: string | undefined;
-    let hasMore = true;
-    let total = 0;
-
-    while (hasMore) {
-      const input: FeishuBitableImportDailyCostData1Input = {
-        pageSize: 500,
-        pageToken,
-        sort: [{ fieldName: '日期', desc: false }],
-      };
-
-      const response = await capabilityClient
-        .load(PLUGIN_INSTANCE_ID)
-        .call<FeishuBitableImportDailyCostData1Output>('searchRecords', input as Record<string, unknown>);
-
-      // 按 outputSchema 解析返回结果
-      const { records: pageRecords, hasMore: more, pageToken: nextToken, total: responseTotal } = response;
-
-      if (responseTotal !== undefined) {
-        total = responseTotal;
-      }
-
-      // 转换数据格式
-      for (const item of pageRecords) {
-        const record = item.record;
-        logger.debug('多维表格原始记录:', JSON.stringify(record));
-
-        // 日期是 Unix 时间戳（毫秒），转换为 YYYY-MM-DD 格式（使用本地时间避免时区偏差）
-        const dateValue = record['日期'];
-        if (!dateValue) {
-          logger.warn('记录缺少日期字段');
-          continue;
-        }
-        const dateObj = new Date(dateValue);
-        const year = dateObj.getFullYear();
-        const month = String(dateObj.getMonth() + 1).padStart(2, '0');
-        const day = String(dateObj.getDate()).padStart(2, '0');
-        const dateStr = `${year}-${month}-${day}`;
-
-        // 平台和 SKU 是 { text: string } 格式
-        // 字段映射：平台->平台, 产品->SKU, 消耗->消耗金额
-        const platformData = record['平台'] as { text: string } | undefined;
-        const skuData = record['产品'] as { text: string } | undefined;
-        const amount = record['消耗'] as number | undefined;
-
-        // 将工具名称归拢到所属大平台（如 dou+ → 抖音）
-        const rawPlatform = platformData?.text || '';
-        const platform = normalizePlatform(rawPlatform);
-        const sku = skuData?.text || '';
-
-        logger.debug(`解析结果: 日期=${dateStr}, 平台=${platform}, SKU=${sku}, 金额=${amount}`);
-
-        if (!platform) {
-          logger.warn('记录缺少平台字段');
-          continue;
-        }
-        if (!sku) {
-          logger.warn('记录缺少产品字段(SKU)');
-          continue;
-        }
-        if (amount === undefined || amount === null) {
-          logger.warn('记录缺少消耗字段(消耗金额)');
-          continue;
-        }
-
-        records.push({
-          recordDate: dateStr,
-          platform,
-          sku,
-          amount,
-          source: '多维表格导入',
-        });
-      }
-
-      hasMore = more;
-      pageToken = nextToken;
-
-      setProgress((prev) => ({
-        ...prev,
-        total: total || records.length,
-        processed: records.length,
-      }));
-    }
-
-    return records;
+    // 使用新的服务端接口直接导入数据
+    const response = await axiosForBackend.post<BatchSaveConsumptionResponse>(
+      '/api/consumption-records/import-from-bitable',
+      {},
+    );
+    
+    // 服务端接口直接完成导入，返回结果
+    setProgress((prev) => ({
+      ...prev,
+      total: response.data.successCount + response.data.failCount,
+      processed: response.data.successCount + response.data.failCount,
+    }));
+    
+    // 返回空数组，因为数据已经在服务端保存
+    return [];
   }, []);
 
   const saveRecords = useCallback(async (records: ConsumptionRecord[]): Promise<BatchSaveConsumptionResponse> => {
