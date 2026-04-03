@@ -6,6 +6,7 @@ import { GlobalExceptionFilter } from './common/filters/exception.filter';
 import { ViewModule } from './modules/view/view.module';
 import { DashboardModule } from './modules/dashboard/dashboard.module';
 import { ConsumptionRecordModule } from './modules/consumption-record/consumption-record.module';
+import { BudgetModule } from './modules/budget/budget.module';
 
 @Module({
   imports: [
@@ -15,6 +16,7 @@ import { ConsumptionRecordModule } from './modules/consumption-record/consumptio
     // Place all business modules here.Do NOT add fallback modules here.
     DashboardModule,
     ConsumptionRecordModule,
+    BudgetModule,
     // ====== @route-section: business-modules END ======
 
     // ⚠️ @route-order: last
