@@ -147,19 +147,14 @@ export const budget = pgTable("budget", {
   pgPolicy("service_role_bypass_policy", { as: "permissive", for: "all", to: ["service_role_workspace_aadjzu433eybu"] }),
 ]);
 
-// Synced table: data is auto-synced from external source. Do not rename or delete this table.
 export const consumptionRecord = pgTable("consumption_record", {
   id: uuid().defaultRandom().notNull(),
-  // Synced field: auto-synced, do not modify or delete
   recordDate: date("record_date").notNull(),
-  // Synced field: auto-synced, do not modify or delete
   platform: varchar({ length: 128 }).notNull(),
-  // Synced field: auto-synced, do not modify or delete
   sku: varchar({ length: 128 }).notNull(),
-  // Synced field: auto-synced, do not modify or delete
   amount: numeric({ precision: 10, scale: 2 }).default('0').notNull(),
-  // Synced field: auto-synced, do not modify or delete
   source: varchar({ length: 32 }).default('多维表格导入'),
+  bitableRecordId: varchar("bitable_record_id", { length: 64 }),
   // System field: Creation time (auto-filled, do not modify)
   createdAt: customTimestamptz('_created_at').default(sql`CURRENT_TIMESTAMP`).notNull(),
   // System field: Creator (auto-filled, do not modify)
@@ -168,11 +163,8 @@ export const consumptionRecord = pgTable("consumption_record", {
   updatedAt: customTimestamptz('_updated_at').default(sql`CURRENT_TIMESTAMP`).notNull(),
   // System field: Updater (auto-filled, do not modify)
   updatedBy: userProfile("_updated_by"),
-  // Synced field: auto-synced, do not modify or delete
-  bitableRecordId: varchar("bitable_record_id", { length: 64 }),
 }, (table) => [
   index("idx_consumption_record_date").using("btree", table.recordDate.asc().nullsLast().op("date_ops")),
-  uniqueIndex("uk_consumption_record_bitable_id").using("btree", table.bitableRecordId.asc().nullsLast().op("text_ops")),
   pgPolicy("修改本人数据", { as: "permissive", for: "all", to: ["authenticated_workspace_aadjzu433eybu"], using: sql`((current_setting('app.user_id'::text) = ANY (ARRAY[]::text[])) AND (current_setting('app.user_id'::text) = (_created_by)::text))` }),
   pgPolicy("查看全部数据", { as: "permissive", for: "select", to: ["anon_workspace_aadjzu433eybu", "authenticated_workspace_aadjzu433eybu"] }),
   pgPolicy("修改全部数据", { as: "permissive", for: "all", to: ["authenticated_workspace_aadjzu433eybu"] }),
