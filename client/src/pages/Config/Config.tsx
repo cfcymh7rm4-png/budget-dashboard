@@ -42,8 +42,8 @@ const budgetItemSchema = z.object({
 });
 
 const batchConfigSchema = z.object({
-  platformBudgets: z.record(z.coerce.number().min(0)),
-  skuRatios: z.record(z.coerce.number().min(0).max(1)),
+  skuBudgets: z.record(z.coerce.number().min(0)),
+  platformRatios: z.record(z.coerce.number().min(0).max(1)),
 });
 
 type BudgetItemFormData = z.infer<typeof budgetItemSchema>;
@@ -79,16 +79,16 @@ const BatchConfigSection: React.FC<BatchConfigSectionProps> = ({
   const form = useForm<BatchConfigFormData>({
     resolver: zodResolver(batchConfigSchema),
     defaultValues: {
-      platformBudgets: Object.fromEntries(PLATFORMS.map((p) => [p, 0])),
-      skuRatios: Object.fromEntries(SKUS.map((s) => [s, 0])),
+      skuBudgets: Object.fromEntries(SKUS.map((s) => [s, 0])),
+      platformRatios: Object.fromEntries(PLATFORMS.map((p) => [p, 0])),
     },
   });
 
   const handleSubmit = async (data: BatchConfigFormData) => {
     // 验证比例总和是否为1
-    const totalRatio = Object.values(data.skuRatios).reduce((a, b) => a + b, 0);
+    const totalRatio = Object.values(data.platformRatios).reduce((a, b) => a + b, 0);
     if (Math.abs(totalRatio - 1) > 0.001) {
-      toast.error('SKU比例总和必须等于1（100%）');
+      toast.error('平台比例总和必须等于1（100%）');
       return;
     }
     await onBatchAllocate(data);
@@ -96,34 +96,34 @@ const BatchConfigSection: React.FC<BatchConfigSectionProps> = ({
 
   const handleReset = () => {
     form.reset({
-      platformBudgets: Object.fromEntries(PLATFORMS.map((p) => [p, 0])),
-      skuRatios: Object.fromEntries(SKUS.map((s) => [s, 0])),
+      skuBudgets: Object.fromEntries(SKUS.map((s) => [s, 0])),
+      platformRatios: Object.fromEntries(PLATFORMS.map((p) => [p, 0])),
     });
   };
 
   return (
     <Card className="rounded-sm border-border">
       <CardHeader className="pb-3">
-        <CardTitle className="text-base font-semibold flex items-center gap-2">
+          <CardTitle className="text-base font-semibold flex items-center gap-2">
           <Calculator className="h-4 w-4" />
-          批量比例配置
+          批量预算配置
         </CardTitle>
       </CardHeader>
       <CardContent>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
-            {/* 平台总预算 */}
+            {/* SKU总预算 */}
             <div className="space-y-3">
-              <h4 className="text-sm font-medium text-muted-foreground">各平台总预算</h4>
+              <h4 className="text-sm font-medium text-muted-foreground">各SKU总预算</h4>
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
-                {PLATFORMS.map((platform) => (
+                {SKUS.map((sku) => (
                   <FormField
-                    key={platform}
+                    key={sku}
                     control={form.control}
-                    name={`platformBudgets.${platform}`}
+                    name={`skuBudgets.${sku}`}
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel className="text-xs">{platform}</FormLabel>
+                        <FormLabel className="text-xs">{sku}</FormLabel>
                         <FormControl>
                           <Input
                             type="number"
@@ -141,23 +141,23 @@ const BatchConfigSection: React.FC<BatchConfigSectionProps> = ({
               </div>
             </div>
 
-            {/* SKU比例 */}
+            {/* 平台比例 */}
             <div className="space-y-3">
               <div className="flex items-center justify-between">
-                <h4 className="text-sm font-medium text-muted-foreground">SKU分配比例</h4>
+                <h4 className="text-sm font-medium text-muted-foreground">平台分配比例</h4>
                 <span className="text-xs text-muted-foreground">
                   总和应为 100%
                 </span>
               </div>
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
-                {SKUS.map((sku) => (
+                {PLATFORMS.map((platform) => (
                   <FormField
-                    key={sku}
+                    key={platform}
                     control={form.control}
-                    name={`skuRatios.${sku}`}
+                    name={`platformRatios.${platform}`}
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel className="text-xs">{sku}</FormLabel>
+                        <FormLabel className="text-xs">{platform}</FormLabel>
                         <FormControl>
                           <Input
                             type="number"
@@ -236,14 +236,14 @@ const BudgetConfigTable: React.FC<BudgetConfigTableProps> = ({
     onDataChange(newData);
   };
 
-  // 按平台分组展示
+  // 按SKU分组展示
   const groupedData = useMemo(() => {
     const groups: Record<string, BudgetWithProportion[]> = {};
     for (const item of data) {
-      if (!groups[item.platform]) {
-        groups[item.platform] = [];
+      if (!groups[item.sku]) {
+        groups[item.sku] = [];
       }
-      groups[item.platform].push(item);
+      groups[item.sku].push(item);
     }
     return groups;
   }, [data]);
@@ -283,27 +283,27 @@ const BudgetConfigTable: React.FC<BudgetConfigTableProps> = ({
           </div>
         ) : (
           <div className="space-y-6">
-            {Object.entries(groupedData).map(([platform, items]) => (
-              <div key={platform} className="space-y-2">
-                <h4 className="text-sm font-medium text-primary">{platform}</h4>
+            {Object.entries(groupedData).map(([sku, items]) => (
+              <div key={sku} className="space-y-2">
+                <h4 className="text-sm font-medium text-primary">{sku}</h4>
                 <div className="rounded-sm border">
                   <Table>
                     <TableHeader>
                       <TableRow className="bg-muted/50">
-                        <TableHead className="w-[120px]">SKU</TableHead>
+                        <TableHead className="w-[120px]">平台</TableHead>
                         <TableHead className="w-[160px]">预算金额</TableHead>
                         <TableHead className="w-[100px]">占比</TableHead>
                         <TableHead>进度</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {items.map((item, idx) => {
+                      {items.map((item) => {
                         const globalIndex = data.findIndex(
                           (d) => d.platform === item.platform && d.sku === item.sku
                         );
                         return (
                           <TableRow key={`${item.platform}-${item.sku}`}>
-                            <TableCell className="font-medium">{item.sku}</TableCell>
+                            <TableCell className="font-medium">{item.platform}</TableCell>
                             <TableCell>
                               <Input
                                 type="number"
@@ -425,8 +425,8 @@ const Config: React.FC = () => {
     try {
       const response = await axiosForBackend.post('/api/budgets/batch-allocate', {
         month,
-        platformTotal: data.platformBudgets,
-        skuRatio: data.skuRatios,
+        skuTotal: data.skuBudgets,
+        platformRatio: data.platformRatios,
       });
 
       toast.success('批量分配成功');

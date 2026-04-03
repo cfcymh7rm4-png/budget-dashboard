@@ -76,20 +76,21 @@ export class BudgetService {
 
   /**
    * 按比例批量分配预算
+   * 先设置SKU总预算，再设置各平台分配比例
    */
   async batchAllocate(request: BatchAllocateRequest): Promise<BatchAllocateResponse> {
-    const { month, platformTotal, skuRatio } = request;
+    const { month, skuTotal, platformRatio } = request;
     const results: Array<{ month: string; platform: string; sku: string; amount: number }> = [];
 
-    // 遍历每个平台
-    for (const [platformName, totalAmount] of Object.entries(platformTotal)) {
-      if (totalAmount <= 0) continue;
+    // 遍历每个SKU
+    for (const [skuName, skuAmount] of Object.entries(skuTotal)) {
+      if (skuAmount <= 0) continue;
 
-      // 计算该平台的SKU分配
-      for (const [skuName, ratio] of Object.entries(skuRatio)) {
+      // 计算该SKU在各平台的分配
+      for (const [platformName, ratio] of Object.entries(platformRatio)) {
         if (ratio <= 0) continue;
 
-        const amount = Math.round(totalAmount * ratio * 100) / 100;
+        const amount = Math.round(skuAmount * ratio * 100) / 100;
 
         await this.db.execute(sql`
           INSERT INTO budget (month, platform, sku, amount)
