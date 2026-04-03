@@ -164,7 +164,6 @@ export const consumptionRecord = pgTable("consumption_record", {
   updatedBy: userProfile("_updated_by"),
 }, (table) => [
   index("idx_consumption_record_date").using("btree", table.recordDate.asc().nullsLast().op("date_ops")),
-  uniqueIndex("uk_consumption_date_platform_sku").using("btree", table.recordDate.asc().nullsLast().op("text_ops"), table.platform.asc().nullsLast().op("date_ops"), table.sku.asc().nullsLast().op("date_ops")),
   pgPolicy("修改本人数据", { as: "permissive", for: "all", to: ["authenticated_workspace_aadjzu433eybu"], using: sql`((current_setting('app.user_id'::text) = ANY (ARRAY[]::text[])) AND (current_setting('app.user_id'::text) = (_created_by)::text))` }),
   pgPolicy("查看全部数据", { as: "permissive", for: "select", to: ["anon_workspace_aadjzu433eybu", "authenticated_workspace_aadjzu433eybu"] }),
   pgPolicy("修改全部数据", { as: "permissive", for: "all", to: ["authenticated_workspace_aadjzu433eybu"] }),

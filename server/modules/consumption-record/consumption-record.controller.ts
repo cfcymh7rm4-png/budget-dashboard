@@ -132,7 +132,8 @@ export class ConsumptionRecordController {
         
         this.logger.log(`第 ${pageNum} 页获取到 ${pageRecords.length} 条原始记录`);
         if (pageRecords.length > 0) {
-          this.logger.log(`第一条记录示例: ${JSON.stringify(pageRecords[0])}`);
+          this.logger.log(`第一条记录完整结构: ${JSON.stringify(pageRecords[0], null, 2)}`);
+          this.logger.log(`第一条记录的所有字段名: ${Object.keys(pageRecords[0].record).join(', ')}`);
         }
         
         if (total !== undefined) {
@@ -156,14 +157,27 @@ export class ConsumptionRecordController {
           // 平台和产品是 { text: string } 格式
           // 兼容两种可能的字段名：'SKU'/'产品' 和 '消耗金额'/'消耗'
           const platformData = record['平台'] as { text: string } | undefined;
-          const skuData = (record['产品'] || record['SKU']) as { text: string } | undefined;
-          const amount = (record['消耗'] ?? record['消耗金额']) as number | undefined;
           
-          this.logger.debug(`原始记录: 平台=${JSON.stringify(platformData)}, SKU/产品=${JSON.stringify(skuData)}, 消耗=${amount}`);
+          // 尝试多种可能的SKU字段名
+          const skuData = (record['产品'] || record['SKU'] || record['sku'] || record['商品'] || record['商品名称']) as { text: string } | string | undefined;
+          
+          // 尝试多种可能的金额字段名
+          const amount = (record['消耗'] ?? record['消耗金额'] ?? record['金额'] ?? record['费用'] ?? record['cost'] ?? record['amount']) as number | undefined;
+          
+          // 将SKU统一转换为字符串
+          let sku: string;
+          if (typeof skuData === 'object' && skuData !== null && 'text' in skuData) {
+            sku = skuData.text;
+          } else if (typeof skuData === 'string') {
+            sku = skuData;
+          } else {
+            sku = '';
+          }
           
           const rawPlatform = platformData?.text || '';
           const platform = this.normalizePlatform(rawPlatform);
-          const sku = skuData?.text || '';
+          
+          this.logger.debug(`解析结果: platform=${platform}, sku=${sku}, amount=${amount}`);
           
           if (platform && sku && amount !== undefined && amount !== null) {
             records.push({
