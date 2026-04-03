@@ -1,0 +1,218 @@
+{
+  "tasks": [
+    {
+      "id": 1,
+      "type": "app_init",
+      "name": "应用初始化任务",
+      "status": "completed",
+      "subtasks": [
+        "初始化布局导航文件Layout",
+        "初始化主题文件",
+        "初始化占位页面和路由"
+      ],
+      "requirements": [],
+      "dependencies": []
+    },
+    {
+      "id": 2,
+      "name": "数据库服务创建",
+      "status": "completed",
+      "type": "normal",
+      "subtasks": [
+        "读取 sql skill",
+        "创建预算配置表（budget）",
+        "创建消耗记录表（consumption_record）",
+        "检查每个表的数据，如果没有数据，则插入必要的 Mock 数据",
+        "编写必要的前后端接口类型定义"
+      ],
+      "requirements": [
+        "1",
+        "2",
+        "3",
+        "4",
+        "5",
+        "6"
+      ],
+      "dependencies": [
+        1
+      ]
+    },
+    {
+      "id": 3,
+      "name": "插件开发（飞书多维表格导入插件）",
+      "status": "completed",
+      "type": "normal",
+      "subtasks": [
+        "读取 plugin-guide skill",
+        "调用 `plugin_instance` 工具创建飞书多维表格插件实例",
+        "调用 `get_plugin_ai_json` 获取运行时投影，输出 Schema 摘录卡（inputSchema + outputSchema 的每个字段名、类型、是否必填）",
+        "根据投影生成前端调用代码骨架，集成到对应的页面中",
+        "验证调用代码：入参符合 inputSchema、出参按 outputSchema 完整消费、错误处理不静默",
+        "插件调用成功后，通过已有的批量保存消耗记录接口将结果保存到数据库"
+      ],
+      "requirements": [
+        "1"
+      ],
+      "dependencies": [
+        2
+      ]
+    },
+    {
+      "id": 4,
+      "name": "服务端 - Dashboard模块开发",
+      "status": "completed",
+      "type": "normal",
+      "subtasks": [
+        "检查 shared 的目录下接口定义",
+        "编写 Service 层，实现概览核心指标、平台对比、SKU占比、消耗趋势查询业务逻辑",
+        "实现 Controller 层，提供GET /api/dashboard/overview、GET /api/dashboard/platform-comparison、GET /api/dashboard/sku-proportion、GET /api/dashboard/consumption-trend 接口",
+        "检查后端实现逻辑和数据库结构的一致性，进行接口测试，首先列出本次新增的所有接口，每个接口都要做测试，并检查服务端错误日志"
+      ],
+      "requirements": [
+        "3",
+        "4",
+        "6"
+      ],
+      "dependencies": [
+        2,
+        3
+      ]
+    },
+    {
+      "id": 5,
+      "name": "服务端 - 消耗记录模块开发",
+      "status": "completed",
+      "type": "normal",
+      "subtasks": [
+        "检查 shared 的目录下接口定义",
+        "编写 Service 层，实现消耗记录批量保存、每日明细查询业务逻辑",
+        "实现 Controller 层，提供POST /api/consumption-records/batch-save、GET /api/consumption-records/daily 接口",
+        "检查后端实现逻辑和数据库结构的一致性，进行接口测试，首先列出本次新增的所有接口，每个接口都要做测试，并检查服务端错误日志"
+      ],
+      "requirements": [
+        "1",
+        "2"
+      ],
+      "dependencies": [
+        2,
+        3
+      ]
+    },
+    {
+      "id": 6,
+      "name": "服务端 - 预算配置模块开发",
+      "status": "completed",
+      "type": "normal",
+      "subtasks": [
+        "检查 shared 的目录下接口定义",
+        "编写 Service 层，实现预算列表查询、预算保存、批量分配业务逻辑",
+        "实现 Controller 层，提供GET /api/budgets、POST /api/budgets、POST /api/budgets/batch-allocate 接口",
+        "检查后端实现逻辑和数据库结构的一致性，进行接口测试，首先列出本次新增的所有接口，每个接口都要做测试，并检查服务端错误日志"
+      ],
+      "requirements": [
+        "5"
+      ],
+      "dependencies": [
+        2,
+        3
+      ]
+    },
+    {
+      "id": 7,
+      "name": "前端 - 预算消耗概览看板页面开发",
+      "status": "completed",
+      "type": "normal",
+      "subtasks": [
+        "配置当前页面路由和导航布局检查，额外检查Layout.tsx的导航栏类型、内容区域padding/margin、容器宽度约束",
+        "图片资源子任务，使用或生成最合理的图片资源",
+        "生成调用对应服务端接口的页面，禁止生成带Mock数据的页面，确保数据完全来源于真实后端服务",
+        "并行开发核心指标卡、平台预算消耗对比柱状图、SKU预算占比饼图、消耗趋势折线图组件",
+        "插件集成：使用工具获取插件运行时投影，调用飞书多维表格插件",
+        "使用ReactECharts组件实现所有数据可视化图表，读取 charts-skill",
+        "检查前后端是否完成集成",
+        "检查前后端错误日志"
+      ],
+      "requirements": [
+        "1",
+        "3",
+        "4",
+        "6"
+      ],
+      "dependencies": [
+        4,
+        5,
+        6
+      ]
+    },
+    {
+      "id": 8,
+      "name": "前端 - 消耗明细列表页页面开发",
+      "status": "completed",
+      "type": "normal",
+      "subtasks": [
+        "配置当前页面路由和导航布局检查",
+        "图片资源子任务，使用或生成最合理的图片资源",
+        "生成调用对应服务端接口的页面，禁止生成带Mock数据的页面，确保数据完全来源于真实后端服务",
+        "并行开发筛选区、消耗进度列表、每日明细展开组件",
+        "使用@lark-apaas/client-toolkit/antd-table组件实现消耗进度列表，读取 table-skill",
+        "检查前后端是否完成集成",
+        "检查前后端错误日志"
+      ],
+      "requirements": [
+        "2"
+      ],
+      "dependencies": [
+        7
+      ]
+    },
+    {
+      "id": 9,
+      "name": "前端 - 预算配置页页面开发",
+      "status": "completed",
+      "type": "normal",
+      "subtasks": [
+        "配置当前页面路由和导航布局检查",
+        "图片资源子任务，使用或生成最合理的图片资源",
+        "生成调用对应服务端接口的页面，禁止生成带Mock数据的页面，确保数据完全来源于真实后端服务",
+        "并行开发月份选择区、批量配置区、明细配置列表组件",
+        "使用表单组件实现预算配置输入与验证，读取 forms-skill",
+        "检查前后端是否完成集成",
+        "检查前后端错误日志"
+      ],
+      "requirements": [
+        "5"
+      ],
+      "dependencies": [
+        7
+      ]
+    },
+    {
+      "id": 10,
+      "name": "验收测试",
+      "status": "completed",
+      "type": "normal",
+      "subtasks": [
+        "汇总本次涉及的所有页面路由，逐条验证路由可达与导航一致性，修复所有不一致和异常",
+        "检查插件实现：重新调用工具获取插件实例信息，严格验证是否正确调用了插件实例，参数符合schema、调用方式正确，输入输出处理正确",
+        "检查服务端和前端的接口设计是否遵循shared目录下文件的定义",
+        "检查所有页面主功能是否正确，组件使用是否符合规范，并梳理所有页面调用的所有接口，保证未使用mock数据",
+        "根据梳理出来的所有接口并行测试，禁止跳过任何接口，检查接口结果和日志信息，并修复错误",
+        "检查所有日志信息是否有错误，并进行排查和修复",
+        "检查所有页面在Layout内容区域内的布局表现，确保无边距冲突、内容溢出问题"
+      ],
+      "requirements": [
+        "1",
+        "2",
+        "3",
+        "4",
+        "5",
+        "6"
+      ],
+      "dependencies": [
+        7,
+        8,
+        9
+      ]
+    }
+  ]
+}

@@ -1,0 +1,52 @@
+{
+  "id": "feishu_bitable_import_daily_cost_data_1",
+  "pluginKey": "@official-plugins/feishu-bitable",
+  "pluginVersion": "1.0.18",
+  "name": "从飞书多维表格导入每日消耗数据",
+  "description": "支持查询多维表格中的每日消耗数据，获取日期、平台、SKU、消耗金额等字段信息",
+  "icon": "",
+  "paramsSchema": {},
+  "formValue": {
+    "appToken": "UFtdb3zgras17usfp4pcyWA9n9d",
+    "tableID": "tblEXktIbA7w4JCk",
+    "owner": "bot",
+    "tips": "调用searchRecords Action查询每日消耗数据，支持获取日期、平台、SKU、消耗金额等字段",
+    "fields": [
+      {
+        "id": "fld_date",
+        "name": "日期",
+        "type": 5,
+        "bizType": "DateTime",
+        "readable": true,
+        "writeable": false
+      },
+      {
+        "readable": true,
+        "writeable": false,
+        "id": "fld_platform",
+        "name": "平台",
+        "type": 1,
+        "bizType": "Text"
+      },
+      {
+        "name": "SKU",
+        "type": 1,
+        "bizType": "Text",
+        "readable": true,
+        "writeable": false,
+        "id": "fld_sku"
+      },
+      {
+        "name": "消耗金额",
+        "type": 2,
+        "bizType": "Currency",
+        "readable": true,
+        "writeable": false,
+        "id": "fld_cost_amount"
+      }
+    ]
+  },
+  "createdAt": 1775208015394,
+  "updatedAt": 1775208015394,
+  "createdBy": 7354933799552172036
+}
