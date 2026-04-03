@@ -99,18 +99,34 @@ export class ConsumptionRecordController {
       this.logger.log('开始从多维表格获取数据...');
       this.logger.log(`插件实例ID: ${PLUGIN_INSTANCE_ID}`);
       
-      // 调用多维表格插件获取所有记录
+      // 计算30天前的日期时间戳（毫秒）
+      const thirtyDaysAgo = new Date();
+      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+      const startTimestamp = thirtyDaysAgo.getTime();
+      
+      // 调用多维表格插件获取记录，限制最多3页（1500条）避免超时
       let pageToken: string | undefined;
       let hasMore = true;
       let totalCount = 0;
       let pageNum = 0;
+      const MAX_PAGES = 3; // 最多获取3页，避免超时
       
-      while (hasMore) {
+      while (hasMore && pageNum < MAX_PAGES) {
         pageNum++;
         const input: Record<string, unknown> = {
           pageSize: 500,
           pageToken,
-          sort: [{ fieldName: '日期', desc: false }],
+          sort: [{ fieldName: '日期', desc: true }], // 降序获取最新数据
+          filter: {
+            conjunction: 'and',
+            conditions: [
+              {
+                fieldName: '日期',
+                operator: 'isGreater',
+                value: [startTimestamp.toString()],
+              },
+            ],
+          },
         };
         
         this.logger.log(`正在获取第 ${pageNum} 页数据...`);
@@ -131,10 +147,6 @@ export class ConsumptionRecordController {
         const { records: pageRecords, hasMore: more, pageToken: nextToken, total } = response;
         
         this.logger.log(`第 ${pageNum} 页获取到 ${pageRecords.length} 条原始记录`);
-        if (pageRecords.length > 0) {
-          this.logger.log(`第一条记录完整结构: ${JSON.stringify(pageRecords[0], null, 2)}`);
-          this.logger.log(`第一条记录的所有字段名: ${Object.keys(pageRecords[0].record).join(', ')}`);
-        }
         
         if (total !== undefined) {
           totalCount = total;
