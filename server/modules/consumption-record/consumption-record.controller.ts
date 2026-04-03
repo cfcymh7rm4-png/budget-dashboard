@@ -167,11 +167,8 @@ export class ConsumptionRecordController {
           const dateStr = `${year}-${month}-${day}`;
           
           // 平台和产品是 { text: string } 格式
-          // 兼容两种可能的字段名：'SKU'/'产品' 和 '消耗金额'/'消耗'
           const platformData = record['平台'] as { text: string } | undefined;
-          
-          // 尝试多种可能的SKU字段名
-          const skuData = (record['产品'] || record['SKU'] || record['sku'] || record['商品'] || record['商品名称']) as { text: string } | string | undefined;
+          const skuData = record['SKU'] as { text: string } | undefined;
           
           // 消耗金额现在是 { text: string } 格式，需要从 text 中解析数字
           let amount: number | undefined;
@@ -183,15 +180,8 @@ export class ConsumptionRecordController {
             amount = match ? Number(match[0]) : undefined;
           }
           
-          // 将SKU统一转换为字符串
-          let sku: string;
-          if (typeof skuData === 'object' && skuData !== null && 'text' in skuData) {
-            sku = skuData.text;
-          } else if (typeof skuData === 'string') {
-            sku = skuData;
-          } else {
-            sku = '';
-          }
+          // 将SKU转换为字符串
+          const sku = skuData?.text || '';
           
           const rawPlatform = platformData?.text || '';
           const platform = this.normalizePlatform(rawPlatform);
