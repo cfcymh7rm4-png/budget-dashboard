@@ -97,18 +97,23 @@ export class ConsumptionRecordController {
     
     try {
       this.logger.log('开始从多维表格获取数据...');
+      this.logger.log(`插件实例ID: ${PLUGIN_INSTANCE_ID}`);
       
       // 调用多维表格插件获取所有记录
       let pageToken: string | undefined;
       let hasMore = true;
       let totalCount = 0;
+      let pageNum = 0;
       
       while (hasMore) {
+        pageNum++;
         const input: Record<string, unknown> = {
           pageSize: 500,
           pageToken,
           sort: [{ fieldName: '日期', desc: false }],
         };
+        
+        this.logger.log(`正在获取第 ${pageNum} 页数据...`);
         
         const response = await this.capabilityService.load(PLUGIN_INSTANCE_ID).call(
           'searchRecords',
@@ -124,6 +129,11 @@ export class ConsumptionRecordController {
         };
         
         const { records: pageRecords, hasMore: more, pageToken: nextToken, total } = response;
+        
+        this.logger.log(`第 ${pageNum} 页获取到 ${pageRecords.length} 条原始记录`);
+        if (pageRecords.length > 0) {
+          this.logger.log(`第一条记录示例: ${JSON.stringify(pageRecords[0])}`);
+        }
         
         if (total !== undefined) {
           totalCount = total;
