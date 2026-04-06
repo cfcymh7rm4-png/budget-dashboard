@@ -136,9 +136,11 @@ export class ConsumptionRecordController {
           total?: number;
         };
         
+        this.logger.log(`插件返回原始数据: ${JSON.stringify(response)}`);
+        
         const { records: pageRecords, hasMore: more, pageToken: nextToken, total } = response;
         
-        this.logger.log(`第 ${pageNum} 页获取到 ${pageRecords.length} 条原始记录`);
+        this.logger.log(`第 ${pageNum} 页获取到 ${pageRecords?.length || 0} 条原始记录, hasMore=${more}, total=${total}`);
         
         if (total !== undefined) {
           totalCount = total;
