@@ -150,6 +150,8 @@ export class ConsumptionRecordController {
         for (const item of pageRecords) {
           const record = item.record;
           
+          this.logger.debug(`原始记录数据: ${JSON.stringify(record)}`);
+          
           // 日期是 Unix 时间戳（毫秒）
           const dateValue = record['日期'] as number;
           if (!dateValue) continue;
@@ -167,13 +169,19 @@ export class ConsumptionRecordController {
           const platformData = record['平台'] as { text: string } | undefined;
           const skuData = record['SKU'] as { text: string } | undefined;
           
-          // 消耗金额现在是 { text: string } 格式，需要从 text 中解析数字
+          // 消耗金额 - 可能是多种格式
           let amount: number | undefined;
-          const rawAmountData = record['消耗金额'] as { text: string } | undefined;
-          if (rawAmountData && typeof rawAmountData === 'object' && 'text' in rawAmountData) {
-            const amountText = rawAmountData.text;
-            // 可能是带货币符号的字符串，如 "¥1000" 或 "1000.00"
+          const rawAmount = record['消耗金额'];
+          this.logger.debug(`消耗金额原始值: ${JSON.stringify(rawAmount)}, 类型: ${typeof rawAmount}`);
+          
+          if (typeof rawAmount === 'number') {
+            amount = rawAmount;
+          } else if (typeof rawAmount === 'object' && rawAmount !== null && 'text' in rawAmount) {
+            const amountText = (rawAmount as { text: string }).text;
             const match = amountText.match(/[\d.]+/);
+            amount = match ? Number(match[0]) : undefined;
+          } else if (typeof rawAmount === 'string') {
+            const match = rawAmount.match(/[\d.]+/);
             amount = match ? Number(match[0]) : undefined;
           }
           
