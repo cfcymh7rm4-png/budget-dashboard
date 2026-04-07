@@ -208,7 +208,7 @@ const Details = () => {
   const [detailDialogOpen, setDetailDialogOpen] = useState(false);
   const [selectedRecord, setSelectedRecord] = useState<{ platform: string; sku: string } | null>(null);
 
-  // 加载数据
+      // 加载数据
   useEffect(() => {
     const fetchData = async () => {
       setLoading(true);
@@ -217,6 +217,7 @@ const Details = () => {
           month,
           page: String(page),
           pageSize: String(pageSize),
+          _t: String(Date.now()), // 添加时间戳禁用缓存
         });
         if (platform) params.append('platform', platform);
         if (sku) params.append('sku', sku);
