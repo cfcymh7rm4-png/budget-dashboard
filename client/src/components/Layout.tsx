@@ -175,12 +175,12 @@ const LayoutContent = () => {
         </SidebarFooter>
       </Sidebar>
 
-      <main className="flex-1 flex flex-col overflow-hidden p-4">
+      <main className="flex-1 flex flex-col min-h-svh p-4">
         <header className="flex items-center gap-2 mb-6">
           <SidebarTrigger />
           <div className="flex-1" />
         </header>
-        <div className="flex-1 overflow-auto">
+        <div className="flex-1">
           <Outlet />
         </div>
       </main>
