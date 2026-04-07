@@ -115,7 +115,7 @@ const BatchConfigSection: React.FC<BatchConfigSectionProps> = ({
           <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
             {/* SKU总预算 */}
             <div className="space-y-3">
-              <h4 className="text-sm font-medium text-muted-foreground">各SKU总预算</h4>
+              <h4 className="text-sm font-medium text-muted-foreground">各SKU总预算 (万元)</h4>
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
                 {SKUS.map((sku) => (
                   <FormField
@@ -126,13 +126,19 @@ const BatchConfigSection: React.FC<BatchConfigSectionProps> = ({
                       <FormItem>
                         <FormLabel className="text-xs">{sku}</FormLabel>
                         <FormControl>
-                          <Input
-                            type="number"
-                            min={0}
-                            placeholder="0"
-                            {...field}
-                            className="h-9 rounded-sm"
-                          />
+                          <div className="relative">
+                            <Input
+                              type="number"
+                              min={0}
+                              step={0.1}
+                              placeholder="0"
+                              {...field}
+                              className="h-9 rounded-sm pr-8"
+                            />
+                            <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">
+                              万
+                            </span>
+                          </div>
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -434,9 +440,14 @@ const Config: React.FC = () => {
         Object.entries(data.platformRatios).map(([k, v]) => [k, v / 100])
       );
       
+      // 将万元转换为元
+      const skuTotalInYuan = Object.fromEntries(
+        Object.entries(data.skuBudgets).map(([k, v]) => [k, v * 10000])
+      );
+      
       const response = await axiosForBackend.post('/api/budgets/batch-allocate', {
         month,
-        skuTotal: data.skuBudgets,
+        skuTotal: skuTotalInYuan,
         platformRatio: platformRatioDecimal,
       });
 
