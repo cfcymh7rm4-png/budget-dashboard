@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useCallback } from 'react';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useForm, useFieldArray } from 'react-hook-form';
+import { useForm, useFieldArray, useWatch } from 'react-hook-form';
 import { z } from 'zod';
 import { axiosForBackend } from '@lark-apaas/client-toolkit/utils/getAxiosForBackend';
 import { logger } from '@lark-apaas/client-toolkit/logger';
@@ -33,6 +33,7 @@ import {
   ChevronRight,
   Trash2,
   Plus,
+  Eye,
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -172,6 +173,57 @@ const BatchConfigSection: React.FC<BatchConfigSectionProps> = ({
     const addedSkus = new Set(fields.map(f => f.sku));
     return SKUS.filter(s => !addedSkus.has(s));
   }, [fields]);
+
+  // 监听表单数据变化，用于预算明细预览
+  const skuConfigs = useWatch({
+    control: form.control,
+    name: 'skuConfigs',
+  });
+
+  // 计算预算明细
+  const budgetDetails = useMemo(() => {
+    if (!skuConfigs || skuConfigs.length === 0) return [];
+    
+    const details: { sku: string; platform: string; budget: number; ratio: number; amount: number }[] = [];
+    
+    for (const config of skuConfigs) {
+      if (!config) continue;
+      const skuBudget = Number(config.budget || 0) * 10000; // 万元转元
+      
+      for (const platform of PLATFORMS) {
+        const ratio = Number(config.platformRatios?.[platform] || 0);
+        // 如果SKU预算为0或平台比例为0，则预算金额为0
+        const amount = skuBudget === 0 || ratio === 0 ? 0 : (skuBudget * ratio) / 100;
+        
+        details.push({
+          sku: config.sku,
+          platform,
+          budget: skuBudget,
+          ratio,
+          amount,
+        });
+      }
+    }
+    
+    return details;
+  }, [skuConfigs]);
+
+  // 按SKU分组显示
+  const groupedDetails = useMemo(() => {
+    const groups: Record<string, typeof budgetDetails> = {};
+    for (const item of budgetDetails) {
+      if (!groups[item.sku]) {
+        groups[item.sku] = [];
+      }
+      groups[item.sku].push(item);
+    }
+    return groups;
+  }, [budgetDetails]);
+
+  // 计算总预算
+  const totalBudget = useMemo(() => {
+    return budgetDetails.reduce((sum, item) => sum + item.amount, 0);
+  }, [budgetDetails]);
 
   return (
     <Card className="rounded-sm border-border">
@@ -363,6 +415,54 @@ const BatchConfigSection: React.FC<BatchConfigSectionProps> = ({
             </div>
           </form>
         </Form>
+
+        {/* 预算明细预览 */}
+        {budgetDetails.length > 0 && (
+          <div className="mt-6 pt-6 border-t border-border">
+            <div className="flex items-center gap-2 mb-4">
+              <Eye className="h-4 w-4 text-primary" />
+              <h3 className="text-sm font-semibold">预算明细预览</h3>
+              <span className="text-xs text-muted-foreground ml-2">
+                总预算: {new Intl.NumberFormat('zh-CN', { style: 'currency', currency: 'CNY', maximumFractionDigits: 0 }).format(totalBudget)}
+              </span>
+            </div>
+            
+            <div className="space-y-3">
+              {Object.entries(groupedDetails).map(([sku, items]) => (
+                <div key={sku} className="border border-border rounded-sm overflow-hidden">
+                  <div className="bg-accent/30 px-3 py-2 flex items-center justify-between">
+                    <span className="text-sm font-medium">{sku}</span>
+                    <span className="text-xs text-muted-foreground">
+                      SKU总预算: {new Intl.NumberFormat('zh-CN', { style: 'currency', currency: 'CNY', maximumFractionDigits: 0 }).format(items[0]?.budget || 0)}
+                    </span>
+                  </div>
+                  <div className="p-3">
+                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-2">
+                      {items.map((item) => (
+                        <div
+                          key={`${item.sku}-${item.platform}`}
+                          className={`text-center p-2 rounded-sm ${
+                            item.amount > 0 ? 'bg-accent/20' : 'bg-muted/30'
+                          }`}
+                        >
+                          <div className="text-xs text-muted-foreground mb-1">{item.platform}</div>
+                          <div className={`text-sm font-mono font-medium ${
+                            item.amount > 0 ? 'text-foreground' : 'text-muted-foreground'
+                          }`}>
+                            {new Intl.NumberFormat('zh-CN', { maximumFractionDigits: 0 }).format(item.amount)}
+                          </div>
+                          <div className="text-xs text-muted-foreground mt-1">
+                            {item.ratio > 0 ? `${item.ratio.toFixed(0)}%` : '-'}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
       </CardContent>
     </Card>
   );
