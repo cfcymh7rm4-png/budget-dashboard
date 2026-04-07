@@ -223,9 +223,11 @@ export class ConsumptionRecordController {
           // 获取投放目标作为备选平台/SKU（可能是 string[] 或 {text: string}[] 格式）
           const targetData = record['投放目标'];
           let target = '';
+          this.logger.debug(`投放目标原始数据: ${JSON.stringify(targetData)}, 类型: ${typeof targetData}, 是否数组: ${Array.isArray(targetData)}`);
           if (Array.isArray(targetData) && targetData.length > 0) {
             // 数组格式：可能是字符串数组或对象数组
             const firstItem = targetData[0];
+            this.logger.debug(`投放目标第一项: ${JSON.stringify(firstItem)}, 类型: ${typeof firstItem}`);
             if (typeof firstItem === 'string') {
               target = firstItem;
             } else if (typeof firstItem === 'object' && firstItem?.text) {
@@ -235,6 +237,7 @@ export class ConsumptionRecordController {
           
           // 如果平台为空，使用投放目标或默认值
           const finalPlatform = platform || target || '未知平台';
+          this.logger.debug(`平台选择: platform='${platform}', target='${target}', finalPlatform='${finalPlatform}'`);
           // 如果SKU为空，使用序号或默认值
           const serialData = record['序号'] as Array<{text: string}> | undefined;
           const serial = serialData?.[0]?.text || '';
