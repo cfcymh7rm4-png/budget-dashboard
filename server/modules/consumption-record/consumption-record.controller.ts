@@ -166,8 +166,8 @@ export class ConsumptionRecordController {
           const dateStr = `${year}-${month}-${day}`;
           
           // 平台和产品是 { text: string } 格式
-          const platformData = record['平台'] as { text: string } | undefined;
-          const skuData = record['SKU'] as { text: string } | undefined;
+          const platformData = record['平台'] as { text: string } | string | undefined;
+          const skuData = record['SKU'] as { text: string } | string | undefined;
           
           // 消耗金额 - 新表格中是 number 类型直接读取
           let amount: number | undefined;
@@ -181,10 +181,21 @@ export class ConsumptionRecordController {
             amount = match ? Number(match[0]) : undefined;
           }
           
-          // 将SKU转换为字符串
-          const sku = skuData?.text || '';
+          // 将SKU转换为字符串（支持 {text: string} 或 string 格式）
+          let sku = '';
+          if (typeof skuData === 'object' && skuData?.text) {
+            sku = skuData.text;
+          } else if (typeof skuData === 'string') {
+            sku = skuData;
+          }
           
-          const rawPlatform = platformData?.text || '';
+          // 平台字段解析（支持 {text: string} 或 string 格式）
+          let rawPlatform = '';
+          if (typeof platformData === 'object' && platformData?.text) {
+            rawPlatform = platformData.text;
+          } else if (typeof platformData === 'string') {
+            rawPlatform = platformData;
+          }
           const platform = this.normalizePlatform(rawPlatform);
           
           this.logger.debug(`解析结果: platform=${platform}, sku=${sku}, amount=${amount}`);
@@ -192,16 +203,27 @@ export class ConsumptionRecordController {
           // 获取 Base 表记录 ID（飞书多维表格记录 ID）
           const bitableRecordId = item.id;
           
-          if (platform && sku && amount !== undefined && amount !== null && bitableRecordId) {
+          // 获取投放目标作为备选平台/SKU
+          const targetData = record['投放目标'] as string[] | undefined;
+          const target = targetData?.[0] || '';
+          
+          // 如果平台为空，使用投放目标或默认值
+          const finalPlatform = platform || target || '未知平台';
+          // 如果SKU为空，使用序号或默认值
+          const serialData = record['序号'] as Array<{text: string}> | undefined;
+          const serial = serialData?.[0]?.text || '';
+          const finalSku = sku || serial || '未知SKU';
+          
+          if (amount !== undefined && amount !== null && bitableRecordId) {
             records.push({
               recordDate: dateStr,
-              platform,
-              sku,
+              platform: finalPlatform,
+              sku: finalSku,
               amount,
               bitableRecordId,
             });
           } else {
-            this.logger.debug(`跳过无效记录: platform=${platform}, sku=${sku}, amount=${amount}, bitableRecordId=${bitableRecordId}`);
+            this.logger.debug(`跳过无效记录: platform=${finalPlatform}, sku=${finalSku}, amount=${amount}, bitableRecordId=${bitableRecordId}`);
           }
         }
         
