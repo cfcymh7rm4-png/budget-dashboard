@@ -423,7 +423,7 @@ const BatchConfigSection: React.FC<BatchConfigSectionProps> = ({
               <Eye className="h-4 w-4 text-primary" />
               <h3 className="text-sm font-semibold">预算明细预览</h3>
               <span className="text-xs text-muted-foreground ml-2">
-                总预算: {new Intl.NumberFormat('zh-CN', { style: 'currency', currency: 'CNY', maximumFractionDigits: 0 }).format(totalBudget)}
+                总预算: {new Intl.NumberFormat('zh-CN', { maximumFractionDigits: 2 }).format(totalBudget / 10000)} 万
               </span>
             </div>
             
@@ -433,7 +433,7 @@ const BatchConfigSection: React.FC<BatchConfigSectionProps> = ({
                   <div className="bg-accent/30 px-3 py-2 flex items-center justify-between">
                     <span className="text-sm font-medium">{sku}</span>
                     <span className="text-xs text-muted-foreground">
-                      SKU总预算: {new Intl.NumberFormat('zh-CN', { style: 'currency', currency: 'CNY', maximumFractionDigits: 0 }).format(items[0]?.budget || 0)}
+                      SKU总预算: {new Intl.NumberFormat('zh-CN', { maximumFractionDigits: 2 }).format((items[0]?.budget || 0) / 10000)} 万
                     </span>
                   </div>
                   <div className="p-3">
@@ -449,7 +449,7 @@ const BatchConfigSection: React.FC<BatchConfigSectionProps> = ({
                           <div className={`text-sm font-mono font-medium ${
                             item.amount > 0 ? 'text-foreground' : 'text-muted-foreground'
                           }`}>
-                            {new Intl.NumberFormat('zh-CN', { maximumFractionDigits: 0 }).format(item.amount)}
+                            {new Intl.NumberFormat('zh-CN', { maximumFractionDigits: 2 }).format(item.amount / 10000)} 万
                           </div>
                           <div className="text-xs text-muted-foreground mt-1">
                             {item.ratio > 0 ? `${item.ratio.toFixed(0)}%` : '-'}
