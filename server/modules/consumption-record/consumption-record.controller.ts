@@ -223,7 +223,12 @@ export class ConsumptionRecordController {
       this.logger.log(`从多维表格获取到 ${records.length} 条有效记录`);
       
       if (records.length === 0) {
-        return { successCount: 0, failCount: 0, errors: [] };
+        this.logger.warn('未获取到有效记录，可能原因：1) 表格中无数据 2) 字段名称不匹配 3) 查询视图无数据');
+        return { 
+          successCount: 0, 
+          failCount: 0, 
+          errors: [{ row: 0, message: '未获取到有效数据，请检查多维表格中是否存在数据，以及字段名称是否正确（日期、平台、SKU、消耗金额）' }] 
+        };
       }
       
       // 批量保存到数据库
