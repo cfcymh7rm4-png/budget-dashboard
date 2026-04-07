@@ -99,10 +99,10 @@ export class ConsumptionRecordController {
       this.logger.log('开始从多维表格获取数据...');
       this.logger.log(`插件实例ID: ${PLUGIN_INSTANCE_ID}`);
       
-      // 计算30天前的日期时间戳（毫秒）
-      const thirtyDaysAgo = new Date();
-      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-      const startTimestamp = thirtyDaysAgo.getTime();
+      // 计算90天前的日期时间戳（毫秒）
+      const ninetyDaysAgo = new Date();
+      ninetyDaysAgo.setDate(ninetyDaysAgo.getDate() - 90);
+      const startTimestamp = ninetyDaysAgo.getTime();
       
       // 调用多维表格插件获取记录，限制最多3页（1500条）避免超时
       let pageToken: string | undefined;
@@ -156,7 +156,7 @@ export class ConsumptionRecordController {
           const dateValue = record['日期'] as number;
           if (!dateValue) continue;
           
-          // 只处理30天内的数据
+          // 只处理90天内的数据
           if (dateValue < startTimestamp) continue;
           
           const dateObj = new Date(dateValue);
