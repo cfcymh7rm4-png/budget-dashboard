@@ -272,6 +272,7 @@ const Details = () => {
       dataIndex: 'sku',
       key: 'sku',
       width: 120,
+      render: (value: string) => value === '牙刷' ? '电动牙刷' : value,
       sorter: (a, b) => a.sku.localeCompare(b.sku),
     },
     {
