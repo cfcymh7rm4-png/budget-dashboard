@@ -212,7 +212,11 @@ export class ConsumptionRecordService {
       }
     }
 
-    const items = Array.from(detailsMap.values());
+    let items = Array.from(detailsMap.values());
+    
+    // 过滤掉预算为0且消耗为0的记录（无意义数据）
+    items = items.filter(item => item.budget > 0 || item.consumed > 0);
+    
     const total = items.length;
 
     // 分页
