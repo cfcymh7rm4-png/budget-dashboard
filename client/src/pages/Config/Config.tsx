@@ -538,24 +538,24 @@ const ConfigPage: React.FC = () => {
         '/api/budgets',
         { params: { month } }
       );
-      // 如果没有数据，初始化空数据
-      if (response.data.length === 0) {
-        const emptyBudgets: BudgetWithProportion[] = [];
-        for (const platform of PLATFORMS) {
-          for (const sku of SKUS) {
-            emptyBudgets.push({
-              month,
-              platform,
-              sku,
-              amount: 0,
-              proportion: 0,
-            });
-          }
+      // 构建完整的SKU×平台组合数据
+      const allBudgets: BudgetWithProportion[] = [];
+      for (const platform of PLATFORMS) {
+        for (const sku of SKUS) {
+          // 从后端返回的数据中查找对应的预算
+          const existing = response.data.find(
+            (item) => item.platform === platform && item.sku === sku
+          );
+          allBudgets.push({
+            month,
+            platform,
+            sku,
+            amount: existing?.amount || 0,
+            proportion: existing?.proportion || 0,
+          });
         }
-        setBudgets(emptyBudgets);
-      } else {
-        setBudgets(response.data);
       }
+      setBudgets(allBudgets);
     } catch (error) {
       toast.error('加载预算数据失败');
       logger.error('加载预算数据失败:', String(error));
