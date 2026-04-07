@@ -19,6 +19,23 @@ export class ConsumptionRecordController {
     private readonly capabilityService: CapabilityService,
   ) {}
 
+  /**
+   * 清空所有消耗记录
+   * POST /api/consumption-records/clear-all
+   */
+  @NeedLogin()
+  @Post('clear-all')
+  async clearAll(): Promise<{ success: boolean; message: string }> {
+    try {
+      await this.consumptionRecordService.clearAll();
+      return { success: true, message: '所有消耗记录已清空' };
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : '未知错误';
+      this.logger.error('清空数据失败:', errorMessage);
+      throw error;
+    }
+  }
+
   // 平台工具名称映射表
   private readonly PLATFORM_TOOL_MAP: Record<string, string> = {
     'dou+': '抖音',

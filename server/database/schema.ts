@@ -1,6 +1,6 @@
 /* eslint-disable */
 /** auto generated, do not edit */
-import { pgTable, index, uniqueIndex, pgPolicy, uuid, varchar, numeric, date, customType } from "drizzle-orm/pg-core"
+import { pgTable, pgPolicy, uuid, varchar, numeric, index, uniqueIndex, date, customType } from "drizzle-orm/pg-core"
 import { sql } from "drizzle-orm"
 
 export const userProfile = customType<{
@@ -139,8 +139,6 @@ export const budget = pgTable("budget", {
   // System field: Updater (auto-filled, do not modify)
   updatedBy: userProfile("_updated_by"),
 }, (table) => [
-  index("idx_budget_month").using("btree", table.month.asc().nullsLast().op("text_ops")),
-  uniqueIndex("uk_budget_month_platform_sku").using("btree", table.month.asc().nullsLast().op("text_ops"), table.platform.asc().nullsLast().op("text_ops"), table.sku.asc().nullsLast().op("text_ops")),
   pgPolicy("修改本人数据", { as: "permissive", for: "all", to: ["authenticated_workspace_aadjzu433eybu"], using: sql`((current_setting('app.user_id'::text) = ANY (ARRAY[]::text[])) AND (current_setting('app.user_id'::text) = (_created_by)::text))` }),
   pgPolicy("查看全部数据", { as: "permissive", for: "select", to: ["anon_workspace_aadjzu433eybu", "authenticated_workspace_aadjzu433eybu"] }),
   pgPolicy("修改全部数据", { as: "permissive", for: "all", to: ["authenticated_workspace_aadjzu433eybu"] }),

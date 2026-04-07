@@ -19,8 +19,16 @@ export class ConsumptionRecordService {
   ) {}
 
   /**
+   * 清空所有消耗记录
+   */
+  async clearAll(): Promise<void> {
+    await this.db.execute(sql`DELETE FROM consumption_record`);
+    this.logger.log('已清空所有消耗记录');
+  }
+
+  /**
    * 批量保存消耗记录（插入或更新）
-   * 使用真正的批量插入优化性能
+   * 使用原始 SQL 批量插入优化性能
    */
   async batchSave(request: BatchSaveConsumptionRequest): Promise<BatchSaveConsumptionResponse> {
     const { records } = request;
@@ -30,37 +38,32 @@ export class ConsumptionRecordService {
     }
 
     try {
-      // 使用 Drizzle 的批量插入，配合 onConflictDoUpdate
-      const values = records.map(r => ({
-        recordDate: r.recordDate,
-        platform: r.platform,
-        sku: r.sku,
-        amount: String(r.amount),
-        source: '多维表格导入',
-        bitableRecordId: r.bitableRecordId || null,
-      }));
-
       // 分批插入，每批500条避免 SQL 过长
       const BATCH_SIZE = 500;
       let successCount = 0;
       
-      for (let i = 0; i < values.length; i += BATCH_SIZE) {
-        const batch = values.slice(i, i + BATCH_SIZE);
+      for (let i = 0; i < records.length; i += BATCH_SIZE) {
+        const batch = records.slice(i, i + BATCH_SIZE);
         
-        await this.db.insert(consumptionRecord)
-          .values(batch as any)
-          .onConflictDoUpdate({
-            target: consumptionRecord.bitableRecordId,
-            set: {
-              recordDate: sql`EXCLUDED.record_date`,
-              platform: sql`EXCLUDED.platform`,
-              sku: sql`EXCLUDED.sku`,
-              amount: sql`EXCLUDED.amount`,
-              source: sql`EXCLUDED.source`,
-              updatedAt: sql`CURRENT_TIMESTAMP`,
-            },
-          });
+        // 构建 VALUES 子句
+        const valuesClause = batch.map(r => 
+          `('${r.recordDate}', '${r.platform.replace(/'/g, "''")}', '${r.sku.replace(/'/g, "''")}', ${r.amount}, '多维表格导入', ${r.bitableRecordId ? `'${r.bitableRecordId}'` : 'NULL'})`
+        ).join(',');
         
+        const query = `
+          INSERT INTO consumption_record (record_date, platform, sku, amount, source, bitable_record_id)
+          VALUES ${valuesClause}
+          ON CONFLICT (bitable_record_id)
+          DO UPDATE SET
+            record_date = EXCLUDED.record_date,
+            platform = EXCLUDED.platform,
+            sku = EXCLUDED.sku,
+            amount = EXCLUDED.amount,
+            source = EXCLUDED.source,
+            _updated_at = CURRENT_TIMESTAMP
+        `;
+        
+        await this.db.execute(sql.raw(query));
         successCount += batch.length;
       }
 
