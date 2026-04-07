@@ -121,29 +121,22 @@ export class ConsumptionRecordService {
     const lastDay = new Date(parseInt(year), parseInt(monthNum), 0).getDate();
     const endDate = `${year}-${monthNum}-${String(lastDay).padStart(2, '0')}`;
 
-    const conditions = [
-      gte(consumptionRecord.recordDate, startDate),
-      lte(consumptionRecord.recordDate, endDate),
-    ];
+    // 使用 SQL 按日期聚合数据
+    const aggregationQuery = sql`
+      SELECT 
+        record_date as date,
+        SUM(amount) as amount
+      FROM consumption_record
+      WHERE record_date >= ${startDate} AND record_date <= ${endDate}
+      ${platform ? sql`AND platform = ${platform}` : sql``}
+      ${sku ? sql`AND sku = ${sku}` : sql``}
+      GROUP BY record_date
+      ORDER BY record_date
+    `;
 
-    if (platform) {
-      conditions.push(eq(consumptionRecord.platform, platform));
-    }
+    const data = await this.db.execute(aggregationQuery);
 
-    if (sku) {
-      conditions.push(eq(consumptionRecord.sku, sku));
-    }
-
-    const data = await this.db
-      .select({
-        date: consumptionRecord.recordDate,
-        amount: consumptionRecord.amount,
-      })
-      .from(consumptionRecord)
-      .where(and(...conditions))
-      .orderBy(consumptionRecord.recordDate);
-
-    return data.map((item) => ({
+    return (data as any[]).map((item) => ({
       date: item.date,
       amount: Number(item.amount),
     }));
