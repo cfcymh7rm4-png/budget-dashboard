@@ -76,7 +76,9 @@ export class ConsumptionRecordService {
       };
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : '未知错误';
+      const errorStack = error instanceof Error ? error.stack : '';
       this.logger.error('批量保存失败:', errorMessage);
+      this.logger.error('错误堆栈:', errorStack);
       return {
         successCount: 0,
         failCount: records.length,
