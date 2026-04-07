@@ -134,8 +134,7 @@ export class ConsumptionRecordController {
           pageSize: 500,
           pageToken,
           sort: [{ fieldName: '日期', desc: true }], // 降序获取最新数据
-          // 明确指定要获取的字段，包括投放目标
-          fieldNames: ['日期', '平台', 'SKU', '消耗金额', '投放目标', '序号'],
+          // 不指定 fieldNames，获取所有字段
         };
         
         this.logger.log(`正在获取第 ${pageNum} 页数据...`);
