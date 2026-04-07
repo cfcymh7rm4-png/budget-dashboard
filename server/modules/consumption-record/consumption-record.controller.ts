@@ -109,7 +109,7 @@ export class ConsumptionRecordController {
   @NeedLogin()
   @Post('import-from-bitable')
   async importFromBitable(@Req() req: Request): Promise<ImportFromBitableResponse> {
-    const PLUGIN_INSTANCE_ID = 'feishu_bitable_import_daily_cost_data_1';
+    const PLUGIN_INSTANCE_ID = 'feishu_bitable_import_daily_consumption_data_1';
     const records: Array<{ recordDate: string; platform: string; sku: string; amount: number; bitableRecordId: string }> = [];
     
     try {
