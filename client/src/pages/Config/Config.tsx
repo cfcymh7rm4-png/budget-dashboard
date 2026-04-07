@@ -96,10 +96,23 @@ const BatchConfigSection: React.FC<BatchConfigSectionProps> = ({
     },
   });
 
-  // 从后端加载已保存的预算数据
+  // 加载预算数据：优先从 localStorage 加载，如果不存在则从后端加载
   useEffect(() => {
     const loadBudgetData = async () => {
       try {
+        // 优先尝试从 localStorage 加载
+        const saved = localStorage.getItem(getStorageKey(month));
+        if (saved) {
+          const parsed = JSON.parse(saved) as BatchConfigFormData;
+          form.reset(parsed);
+          if (parsed.skuConfigs?.length > 0) {
+            setExpandedSkus(new Set(parsed.skuConfigs.map(c => c.sku)));
+          }
+          setIsLoaded(true);
+          return;
+        }
+
+        // localStorage 没有数据，从后端加载
         const response = await axiosForBackend.get<BudgetWithProportion[]>(`/api/budgets?month=${month}`);
         const budgets = response.data;
 
@@ -134,19 +147,12 @@ const BatchConfigSection: React.FC<BatchConfigSectionProps> = ({
 
           form.reset({ skuConfigs });
           setExpandedSkus(new Set(skuConfigs.map(c => c.sku)));
+          
+          // 同时保存到 localStorage
+          localStorage.setItem(getStorageKey(month), JSON.stringify({ skuConfigs }));
         } else {
-          // 后端没有数据，尝试从 localStorage 加载
-          const saved = localStorage.getItem(getStorageKey(month));
-          if (saved) {
-            const parsed = JSON.parse(saved) as BatchConfigFormData;
-            form.reset(parsed);
-            if (parsed.skuConfigs?.length > 0) {
-              setExpandedSkus(new Set(parsed.skuConfigs.map(c => c.sku)));
-            }
-          } else {
-            form.reset({ skuConfigs: [] });
-            setExpandedSkus(new Set());
-          }
+          form.reset({ skuConfigs: [] });
+          setExpandedSkus(new Set());
         }
       } catch (error) {
         logger.error('加载预算数据失败:', String(error));
@@ -588,8 +594,8 @@ const ConfigPage: React.FC = () => {
         platformRatio,
       });
 
-      // 清除本地缓存
-      localStorage.removeItem(getStorageKey(month));
+      // 保存当前配置到本地缓存（作为备份，便于刷新后恢复）
+      localStorage.setItem(getStorageKey(month), JSON.stringify(data));
       toast.success('批量分配成功');
     } catch (error) {
       toast.error('批量分配失败');
