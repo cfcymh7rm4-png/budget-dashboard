@@ -129,7 +129,7 @@ export function BaseComboboxList<T>({
 
     if (shouldShowSkeleton) {
       return (
-        <div className="absolute inset-0 overflow-hidden! bg-background p-1 py-1.5">
+        <div className="absolute inset-0 !overflow-hidden bg-background p-1 py-1.5">
           {Array.from({ length: 5 }).map((_, index) => (
             <div key={index} className={skeletonItemVariants({ size })}>
               <Skeleton className={skeletonAvatarVariants({ size })} />
@@ -163,7 +163,7 @@ export function BaseComboboxList<T>({
     <CommandList className={classNames.list} autoFocus>
       <div className="relative">
         <ScrollArea
-          className={`max-h-[300px] [&>[data-radix-scroll-area-viewport]>div]:block! ${size === 'xs' ? 'min-h-[54px]' : 'min-h-[58px]'}`}
+          className={`max-h-[300px] [&>[data-radix-scroll-area-viewport]>div]:!block ${size === 'xs' ? 'min-h-[54px]' : 'min-h-[58px]'}`}
           onWheel={(e: React.WheelEvent<HTMLDivElement>) => e.stopPropagation()}
         >
           <CommandGroup className="w-full">{content}</CommandGroup>

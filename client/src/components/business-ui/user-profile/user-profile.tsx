@@ -260,7 +260,7 @@ function UserProfile(props: UserProfileProps) {
           <Button
             size="sm"
             variant="ghost"
-            className="pr-1 pl-1 text-primary! not-disabled:hover:bg-primary/10 not-disabled:hover:text-primary/90 focus-visible:bg-primary/20"
+            className="pr-1 pl-1 !text-primary not-disabled:hover:bg-primary/10 not-disabled:hover:text-primary/90 focus-visible:bg-primary/20"
             onClick={fetchData}
           >
             重试

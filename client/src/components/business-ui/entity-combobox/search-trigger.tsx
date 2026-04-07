@@ -244,7 +244,7 @@ export const SearchTrigger = ({
           }}
         >
           <>
-            <CircleX className="h-3! w-3!" />
+            <CircleX className="!h-3 !w-3" />
             <span className="sr-only">Clear all</span>
           </>
         </Button>
