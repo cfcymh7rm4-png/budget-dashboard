@@ -38,6 +38,7 @@ import {
 import { toast } from 'sonner';
 import { UniversalLink } from '@lark-apaas/client-toolkit/components/UniversalLink';
 import { logger } from '@lark-apaas/client-toolkit/logger';
+import { CanRole } from '@lark-apaas/client-toolkit/auth';
 
 // ==================== 工具函数 ====================
 const formatAmount = (amount: number): string => {
@@ -469,25 +470,29 @@ const Dashboard: React.FC = () => {
             onChange={(e) => setMonth(e.target.value)}
             className="w-40 rounded-sm"
           />
-          <Button
-            variant="outline"
-            onClick={handleImport}
-            disabled={isImporting}
-            className="rounded-sm"
-          >
-            {isImporting ? (
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-            ) : (
-              <Download className="mr-2 h-4 w-4" />
-            )}
-            导入数据
-          </Button>
-          <UniversalLink to="/config">
-            <Button className="rounded-sm">
-              <Settings className="mr-2 h-4 w-4" />
-              预算配置
+          <CanRole roles={['admin']}>
+            <Button
+              variant="outline"
+              onClick={handleImport}
+              disabled={isImporting}
+              className="rounded-sm"
+            >
+              {isImporting ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              ) : (
+                <Download className="mr-2 h-4 w-4" />
+              )}
+              导入数据
             </Button>
-          </UniversalLink>
+          </CanRole>
+          <CanRole roles={['admin']}>
+            <UniversalLink to="/config">
+              <Button className="rounded-sm">
+                <Settings className="mr-2 h-4 w-4" />
+                预算配置
+              </Button>
+            </UniversalLink>
+          </CanRole>
         </div>
       </div>
 

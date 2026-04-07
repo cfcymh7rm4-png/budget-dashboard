@@ -1,5 +1,5 @@
 import { Controller, Get, Post, Query, Body, Logger } from '@nestjs/common';
-import { NeedLogin } from '@lark-apaas/fullstack-nestjs-core';
+import { NeedLogin, CanRole } from '@lark-apaas/fullstack-nestjs-core';
 import { BudgetService } from './budget.service';
 import type {
   GetBudgetsRequest,
@@ -35,6 +35,7 @@ export class BudgetController {
    * 保存预算配置
    * POST /api/budgets
    */
+  @CanRole(['admin'])
   @NeedLogin()
   @Post()
   async saveBudgets(
@@ -47,6 +48,7 @@ export class BudgetController {
    * 按比例批量分配预算
    * POST /api/budgets/batch-allocate
    */
+  @CanRole(['admin'])
   @NeedLogin()
   @Post('batch-allocate')
   async batchAllocate(

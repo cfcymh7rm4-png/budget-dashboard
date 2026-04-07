@@ -1,5 +1,5 @@
 import { Controller, Get, Post, Query, Body, Logger, Req } from '@nestjs/common';
-import { NeedLogin, CapabilityService } from '@lark-apaas/fullstack-nestjs-core';
+import { NeedLogin, CapabilityService, CanRole } from '@lark-apaas/fullstack-nestjs-core';
 import { ConsumptionRecordService } from './consumption-record.service';
 import type { Request } from 'express';
 import type {
@@ -23,6 +23,7 @@ export class ConsumptionRecordController {
    * 清空所有消耗记录
    * POST /api/consumption-records/clear-all
    */
+  @CanRole(['admin'])
   @NeedLogin()
   @Post('clear-all')
   async clearAll(): Promise<{ success: boolean; message: string }> {
@@ -57,6 +58,7 @@ export class ConsumptionRecordController {
    * 批量保存消耗记录
    * POST /api/consumption-records/batch-save
    */
+  @CanRole(['admin'])
   @NeedLogin()
   @Post('batch-save')
   async batchSave(
@@ -107,6 +109,7 @@ export class ConsumptionRecordController {
    * 从飞书多维表格导入数据（服务端直接调用）
    * POST /api/consumption-records/import-from-bitable
    */
+  @CanRole(['admin'])
   @NeedLogin()
   @Post('import-from-bitable')
   async importFromBitable(@Req() req: Request): Promise<ImportFromBitableResponse> {

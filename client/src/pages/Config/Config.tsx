@@ -36,6 +36,7 @@ import {
   Eye,
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { CanRole } from '@lark-apaas/client-toolkit/auth';
 
 // ==================== 类型和Schema ====================
 const budgetItemSchema = z.object({
@@ -607,33 +608,35 @@ const ConfigPage: React.FC = () => {
   };
 
   return (
-    <div className="space-y-6 max-w-[1200px] bg-card p-6 rounded-sm border border-border">
-      {/* 页面标题 */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div className="flex items-center gap-2">
-          <Settings className="h-5 w-5 text-primary" />
-          <h1 className="text-xl font-semibold">预算配置</h1>
+    <CanRole roles={['admin']}>
+      <div className="space-y-6 max-w-[1200px] bg-card p-6 rounded-sm border border-border">
+        {/* 页面标题 */}
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div className="flex items-center gap-2">
+            <Settings className="h-5 w-5 text-primary" />
+            <h1 className="text-xl font-semibold">预算配置</h1>
+          </div>
+
+          {/* 月份选择 */}
+          <div className="flex items-center gap-2">
+            <span className="text-sm text-muted-foreground">配置月份:</span>
+            <Input
+              type="month"
+              value={month}
+              onChange={(e) => setMonth(e.target.value)}
+              className="w-40 rounded-sm"
+            />
+          </div>
         </div>
 
-        {/* 月份选择 */}
-        <div className="flex items-center gap-2">
-          <span className="text-sm text-muted-foreground">配置月份:</span>
-          <Input
-            type="month"
-            value={month}
-            onChange={(e) => setMonth(e.target.value)}
-            className="w-40 rounded-sm"
-          />
-        </div>
+        {/* 批量配置区 */}
+        <BatchConfigSection
+          month={month}
+          onBatchAllocate={handleBatchAllocate}
+          loading={batchLoading}
+        />
       </div>
-
-      {/* 批量配置区 */}
-      <BatchConfigSection
-        month={month}
-        onBatchAllocate={handleBatchAllocate}
-        loading={batchLoading}
-      />
-    </div>
+    </CanRole>
   );
 };
 
