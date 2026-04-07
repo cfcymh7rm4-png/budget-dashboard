@@ -82,18 +82,25 @@ export class BudgetService {
     const { month, skuTotal, platformRatio } = request;
     const results: Array<{ month: string; platform: string; sku: string; amount: number }> = [];
 
+    // 定义所有平台列表
+    const platforms = ['抖音', '小红书', 'B站', '微博', '微信', '知乎'];
+
     // 遍历每个SKU
     for (const [skuName, skuAmount] of Object.entries(skuTotal)) {
-      if (skuAmount <= 0) continue;
-
+      const skuBudget = skuAmount as number;
+      
       // 获取该SKU的平台比例配置
       const skuPlatformRatios = platformRatio[skuName] || {};
       
-      // 计算该SKU在各平台的分配
-      for (const [platformName, ratio] of Object.entries(skuPlatformRatios)) {
-        if (ratio <= 0) continue;
-
-        const amount = Math.round(skuAmount * ratio * 100) / 100;
+      // 遍历所有平台，确保比例为0的平台预算也更新为0
+      for (const platformName of platforms) {
+        const ratio = skuPlatformRatios[platformName] || 0;
+        
+        // 当SKU总预算为0或平台比例为0时，预算设置为0
+        let amount = 0;
+        if (skuBudget > 0 && ratio > 0) {
+          amount = Math.round(skuBudget * ratio * 100) / 100;
+        }
 
         await this.db.execute(sql`
           INSERT INTO budget (month, platform, sku, amount)
