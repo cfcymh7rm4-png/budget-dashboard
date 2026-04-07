@@ -169,17 +169,24 @@ export class ConsumptionRecordController {
           const platformData = record['平台'] as { text: string } | undefined;
           const skuData = record['SKU'] as { text: string } | undefined;
           
-          // 消耗金额 - 可能是多种格式
+          // 消耗金额 - 支持 Number 类型直接读取
           let amount: number | undefined;
           const rawAmount = record['消耗金额'];
           this.logger.debug(`消耗金额原始值: ${JSON.stringify(rawAmount)}, 类型: ${typeof rawAmount}`);
           
           if (typeof rawAmount === 'number') {
             amount = rawAmount;
-          } else if (typeof rawAmount === 'object' && rawAmount !== null && 'text' in rawAmount) {
-            const amountText = (rawAmount as { text: string }).text;
-            const match = amountText.match(/[\d.]+/);
-            amount = match ? Number(match[0]) : undefined;
+          } else if (typeof rawAmount === 'object' && rawAmount !== null) {
+            // 可能是 { text: string } 或 { value: number } 格式
+            if ('text' in rawAmount) {
+              const amountText = (rawAmount as { text: string }).text;
+              if (amountText) {
+                const match = amountText.match(/[\d.]+/);
+                amount = match ? Number(match[0]) : undefined;
+              }
+            } else if ('value' in rawAmount) {
+              amount = Number((rawAmount as { value: number }).value);
+            }
           } else if (typeof rawAmount === 'string') {
             const match = rawAmount.match(/[\d.]+/);
             amount = match ? Number(match[0]) : undefined;
