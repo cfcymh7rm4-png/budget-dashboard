@@ -220,16 +220,25 @@ export class ConsumptionRecordController {
           // 获取 Base 表记录 ID（飞书多维表格记录 ID）
           const bitableRecordId = item.id;
           
-          // 获取投放目标作为备选平台/SKU
-          const targetData = record['投放目标'] as string[] | undefined;
-          const target = targetData?.[0] || '';
+          // 获取投放目标作为备选平台/SKU（可能是 string[] 或 {text: string}[] 格式）
+          const targetData = record['投放目标'];
+          let target = '';
+          if (Array.isArray(targetData) && targetData.length > 0) {
+            // 数组格式：可能是字符串数组或对象数组
+            const firstItem = targetData[0];
+            if (typeof firstItem === 'string') {
+              target = firstItem;
+            } else if (typeof firstItem === 'object' && firstItem?.text) {
+              target = firstItem.text;
+            }
+          }
           
           // 如果平台为空，使用投放目标或默认值
           const finalPlatform = platform || target || '未知平台';
           // 如果SKU为空，使用序号或默认值
           const serialData = record['序号'] as Array<{text: string}> | undefined;
           const serial = serialData?.[0]?.text || '';
-          const finalSku = sku || serial || '未知SKU';
+          const finalSku = sku || serial || target || '未知SKU';
           
           if (amount !== undefined && amount !== null && bitableRecordId) {
             records.push({
