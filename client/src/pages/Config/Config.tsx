@@ -10,6 +10,13 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import {
   Form,
   FormControl,
   FormField,
@@ -31,6 +38,10 @@ import {
   Calculator,
   Loader2,
   AlertCircle,
+  ChevronDown,
+  ChevronRight,
+  Trash2,
+  Plus,
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -41,12 +52,19 @@ const budgetItemSchema = z.object({
   amount: z.coerce.number().min(0, '金额不能为负数'),
 });
 
+// 每个SKU的配置
+const skuConfigSchema = z.object({
+  sku: z.string(),
+  budget: z.coerce.number().min(0, '预算不能为负数'),
+  platformRatios: z.record(z.coerce.number().min(0).max(100)),
+});
+
 const batchConfigSchema = z.object({
-  skuBudgets: z.record(z.coerce.number().min(0)),
-  platformRatios: z.record(z.coerce.number().min(0).max(1)),
+  skuConfigs: z.array(skuConfigSchema),
 });
 
 type BudgetItemFormData = z.infer<typeof budgetItemSchema>;
+type SkuConfigFormData = z.infer<typeof skuConfigSchema>;
 type BatchConfigFormData = z.infer<typeof batchConfigSchema>;
 
 // ==================== 工具函数 ====================
@@ -64,6 +82,11 @@ const getCurrentMonth = (): string => {
   return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
 };
 
+// 计算平台比例总和
+const calculateTotalRatio = (ratios: Record<string, number>): number => {
+  return Object.values(ratios).reduce((a, b) => a + b, 0);
+};
+
 // ==================== 批量配置区组件 ====================
 interface BatchConfigSectionProps {
   month: string;
@@ -76,36 +99,102 @@ const BatchConfigSection: React.FC<BatchConfigSectionProps> = ({
   onBatchAllocate,
   loading,
 }) => {
+  const [selectedSku, setSelectedSku] = useState<string>('');
+  const [expandedSkus, setExpandedSkus] = useState<Set<string>>(new Set());
+
   const form = useForm<BatchConfigFormData>({
     resolver: zodResolver(batchConfigSchema),
     defaultValues: {
-      skuBudgets: Object.fromEntries(SKUS.map((s) => [s, 0])),
-      platformRatios: Object.fromEntries(PLATFORMS.map((p) => [p, 0])),
+      skuConfigs: [],
     },
   });
 
-  const handleSubmit = async (data: BatchConfigFormData) => {
-    // 验证比例总和是否为100%
-    const totalRatio = Object.values(data.platformRatios).reduce((a, b) => a + b, 0);
-    if (Math.abs(totalRatio - 100) > 0.1) {
-      toast.error('平台比例总和必须等于100%');
+  const { fields, append, remove, update } = useFieldArray({
+    control: form.control,
+    name: 'skuConfigs',
+  });
+
+  // 添加SKU配置
+  const handleAddSku = () => {
+    if (!selectedSku) {
+      toast.error('请选择一个SKU');
       return;
+    }
+    
+    // 检查是否已存在
+    const exists = fields.some(f => f.sku === selectedSku);
+    if (exists) {
+      toast.error('该SKU已添加');
+      return;
+    }
+
+    append({
+      sku: selectedSku,
+      budget: 0,
+      platformRatios: Object.fromEntries(PLATFORMS.map(p => [p, 0])),
+    });
+    
+    // 自动展开
+    setExpandedSkus(prev => new Set([...prev, selectedSku]));
+    setSelectedSku('');
+  };
+
+  // 删除SKU配置
+  const handleRemoveSku = (index: number) => {
+    const sku = fields[index]?.sku;
+    remove(index);
+    if (sku) {
+      setExpandedSkus(prev => {
+        const next = new Set(prev);
+        next.delete(sku);
+        return next;
+      });
+    }
+  };
+
+  // 切换展开/收起
+  const toggleExpand = (sku: string) => {
+    setExpandedSkus(prev => {
+      const next = new Set(prev);
+      if (next.has(sku)) {
+        next.delete(sku);
+      } else {
+        next.add(sku);
+      }
+      return next;
+    });
+  };
+
+  const handleSubmit = async (data: BatchConfigFormData) => {
+    // 验证每个SKU的平台比例总和是否为100%
+    for (const config of data.skuConfigs) {
+      const totalRatio = calculateTotalRatio(config.platformRatios);
+      if (Math.abs(totalRatio - 100) > 0.1) {
+        toast.error(`${config.sku} 的平台比例总和必须等于100%，当前为 ${totalRatio.toFixed(1)}%`);
+        return;
+      }
     }
     await onBatchAllocate(data);
   };
 
   const handleReset = () => {
     form.reset({
-      skuBudgets: Object.fromEntries(SKUS.map((s) => [s, 0])),
-      platformRatios: Object.fromEntries(PLATFORMS.map((p) => [p, 0])),
+      skuConfigs: [],
     });
+    setExpandedSkus(new Set());
     toast.info('已重置为默认值');
   };
+
+  // 获取未添加的SKU列表
+  const availableSkus = useMemo(() => {
+    const addedSkus = new Set(fields.map(f => f.sku));
+    return SKUS.filter(s => !addedSkus.has(s));
+  }, [fields]);
 
   return (
     <Card className="rounded-sm border-border">
       <CardHeader className="pb-3">
-          <CardTitle className="text-base font-semibold flex items-center gap-2">
+        <CardTitle className="text-base font-semibold flex items-center gap-2">
           <Calculator className="h-4 w-4" />
           批量预算配置
         </CardTitle>
@@ -113,87 +202,165 @@ const BatchConfigSection: React.FC<BatchConfigSectionProps> = ({
       <CardContent>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
-            {/* SKU总预算 */}
-            <div className="space-y-3">
-              <h4 className="text-sm font-medium text-muted-foreground">各SKU总预算 (万元)</h4>
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
-                {SKUS.map((sku) => (
-                  <FormField
-                    key={sku}
-                    control={form.control}
-                    name={`skuBudgets.${sku}`}
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel className="text-xs">{sku}</FormLabel>
-                        <FormControl>
-                          <div className="relative">
-                            <Input
-                              type="number"
-                              min={0}
-                              step={0.1}
-                              placeholder="0"
-                              {...field}
-                              className="h-9 rounded-sm pr-8"
-                            />
-                            <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">
-                              万
-                            </span>
-                          </div>
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                ))}
-              </div>
+            {/* 添加SKU */}
+            <div className="flex items-center gap-3">
+              <Select value={selectedSku} onValueChange={setSelectedSku}>
+                <SelectTrigger className="w-[200px] rounded-sm">
+                  <SelectValue placeholder="选择SKU" />
+                </SelectTrigger>
+                <SelectContent>
+                  {availableSkus.map((sku) => (
+                    <SelectItem key={sku} value={sku}>
+                      {sku}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={handleAddSku}
+                disabled={!selectedSku}
+                className="rounded-sm gap-1"
+              >
+                <Plus className="h-4 w-4" />
+                添加
+              </Button>
             </div>
 
-            {/* 平台比例 */}
-            <div className="space-y-3">
-              <div className="flex items-center justify-between">
-                <h4 className="text-sm font-medium text-muted-foreground">平台分配比例 (%)</h4>
-                <span className="text-xs text-muted-foreground">
-                  总和应为 100%
-                </span>
-              </div>
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
-                {PLATFORMS.map((platform) => (
-                  <FormField
-                    key={platform}
-                    control={form.control}
-                    name={`platformRatios.${platform}`}
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel className="text-xs">{platform}</FormLabel>
-                        <FormControl>
-                          <div className="relative">
-                            <Input
-                              type="number"
-                              min={0}
-                              max={100}
-                              step={1}
-                              placeholder="0"
-                              {...field}
-                              className="h-9 rounded-sm pr-8"
-                            />
-                            <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">
-                              %
+            {/* SKU配置列表 */}
+            {fields.length > 0 && (
+              <div className="space-y-3">
+                <h4 className="text-sm font-medium text-muted-foreground">SKU配置</h4>
+                <div className="space-y-2">
+                  {fields.map((field, index) => {
+                    const isExpanded = expandedSkus.has(field.sku);
+                    const totalRatio = calculateTotalRatio(form.watch(`skuConfigs.${index}.platformRatios`) || {});
+                    const isValid = Math.abs(totalRatio - 100) < 0.1;
+
+                    return (
+                      <div
+                        key={field.id}
+                        className="border border-border rounded-sm overflow-hidden"
+                      >
+                        {/* SKU头部 */}
+                        <div
+                          className="flex items-center justify-between px-4 py-3 bg-accent/30 cursor-pointer hover:bg-accent/50 transition-colors"
+                          onClick={() => toggleExpand(field.sku)}
+                        >
+                          <div className="flex items-center gap-3">
+                            {isExpanded ? (
+                              <ChevronDown className="h-4 w-4 text-muted-foreground" />
+                            ) : (
+                              <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                            )}
+                            <span className="font-medium">{field.sku}</span>
+                            <span className={`text-xs ${isValid ? 'text-success' : 'text-warning'}`}>
+                              比例: {totalRatio.toFixed(0)}%
                             </span>
                           </div>
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                ))}
+                          <div className="flex items-center gap-2">
+                            <span className="text-sm text-muted-foreground">
+                              预算: {form.watch(`skuConfigs.${index}.budget`) || 0} 万
+                            </span>
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleRemoveSku(index);
+                              }}
+                              className="h-8 w-8 p-0 text-destructive hover:text-destructive"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </div>
+
+                        {/* SKU详细配置 */}
+                        {isExpanded && (
+                          <div className="p-4 space-y-4">
+                            {/* 预算输入 */}
+                            <FormField
+                              control={form.control}
+                              name={`skuConfigs.${index}.budget`}
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormLabel className="text-xs">总预算 (万元)</FormLabel>
+                                  <FormControl>
+                                    <div className="relative w-[200px]">
+                                      <Input
+                                        type="number"
+                                        min={0}
+                                        step={0.1}
+                                        placeholder="0"
+                                        {...field}
+                                        className="h-9 rounded-sm pr-8"
+                                      />
+                                      <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">
+                                        万
+                                      </span>
+                                    </div>
+                                  </FormControl>
+                                  <FormMessage />
+                                </FormItem>
+                              )}
+                            />
+
+                            {/* 平台比例 */}
+                            <div className="space-y-2">
+                              <div className="flex items-center justify-between">
+                                <FormLabel className="text-xs">平台分配比例 (%)</FormLabel>
+                                <span className={`text-xs ${isValid ? 'text-success' : 'text-warning'}`}>
+                                  总和: {totalRatio.toFixed(0)}%
+                                </span>
+                              </div>
+                              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                                {PLATFORMS.map((platform) => (
+                                  <FormField
+                                    key={platform}
+                                    control={form.control}
+                                    name={`skuConfigs.${index}.platformRatios.${platform}`}
+                                    render={({ field }) => (
+                                      <FormItem className="mb-0">
+                                        <FormLabel className="text-xs text-muted-foreground">{platform}</FormLabel>
+                                        <FormControl>
+                                          <div className="relative">
+                                            <Input
+                                              type="number"
+                                              min={0}
+                                              max={100}
+                                              step={1}
+                                              placeholder="0"
+                                              {...field}
+                                              className="h-8 rounded-sm pr-7 text-sm"
+                                            />
+                                            <span className="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">
+                                              %
+                                            </span>
+                                          </div>
+                                        </FormControl>
+                                      </FormItem>
+                                    )}
+                                  />
+                                ))}
+                              </div>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
               </div>
-            </div>
+            )}
 
             {/* 操作按钮 */}
             <div className="flex gap-3">
               <Button
                 type="submit"
-                disabled={loading}
+                disabled={loading || fields.length === 0}
                 className="rounded-sm"
               >
                 {loading ? (
@@ -219,154 +386,149 @@ const BatchConfigSection: React.FC<BatchConfigSectionProps> = ({
   );
 };
 
-// ==================== 明细配置列表组件 ====================
-interface BudgetConfigTableProps {
-  data: BudgetWithProportion[];
-  onDataChange: (data: BudgetWithProportion[]) => void;
+// ==================== 预算明细列表组件 ====================
+interface BudgetListSectionProps {
+  month: string;
+  budgets: BudgetWithProportion[];
   loading: boolean;
   onSave: () => Promise<void>;
   saving: boolean;
-  totalBudget: number;
 }
 
-const BudgetConfigTable: React.FC<BudgetConfigTableProps> = ({
-  data,
-  onDataChange,
+const BudgetListSection: React.FC<BudgetListSectionProps> = ({
+  month,
+  budgets,
   loading,
   onSave,
   saving,
-  totalBudget,
 }) => {
-  const handleAmountChange = (index: number, value: string) => {
-    const newData = [...data];
-    const amount = parseFloat(value) || 0;
-    newData[index] = {
-      ...newData[index],
-      amount,
-      proportion: totalBudget > 0 ? Number(((amount / totalBudget) * 100).toFixed(2)) : 0,
-    };
-    onDataChange(newData);
-  };
-
-  // 按SKU分组展示
-  const groupedData = useMemo(() => {
+  // 按SKU分组
+  const groupedBudgets = useMemo(() => {
     const groups: Record<string, BudgetWithProportion[]> = {};
-    for (const item of data) {
+    budgets.forEach((item) => {
       if (!groups[item.sku]) {
         groups[item.sku] = [];
       }
       groups[item.sku].push(item);
-    }
+    });
     return groups;
-  }, [data]);
+  }, [budgets]);
+
+  // 计算SKU总计
+  const skuTotals = useMemo(() => {
+    const totals: Record<string, number> = {};
+    Object.entries(groupedBudgets).forEach(([sku, items]) => {
+      totals[sku] = items.reduce((sum, item) => sum + item.amount, 0);
+    });
+    return totals;
+  }, [groupedBudgets]);
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-12">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  if (budgets.length === 0) {
+    return (
+      <div className="text-center py-12 text-muted-foreground">
+        <AlertCircle className="h-12 w-12 mx-auto mb-3 opacity-50" />
+        <p>暂无预算配置</p>
+        <p className="text-sm">请使用上方批量配置功能或手动添加</p>
+      </div>
+    );
+  }
 
   return (
-    <Card className="rounded-sm border-border">
-      <CardHeader className="pb-3 flex flex-row items-center justify-between">
-        <CardTitle className="text-base font-semibold">明细配置</CardTitle>
-        <div className="flex items-center gap-4 text-sm">
-          <span className="text-muted-foreground">
-            总预算: <strong className="text-foreground font-mono">{formatAmount(totalBudget)}</strong>
-          </span>
-          <Button
-            onClick={onSave}
-            disabled={saving || loading}
-            size="sm"
-            className="rounded-sm"
-          >
-            {saving ? (
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-            ) : (
-              <Save className="mr-2 h-4 w-4" />
-            )}
-            保存配置
-          </Button>
-        </div>
-      </CardHeader>
-      <CardContent>
-        {loading ? (
-          <div className="flex h-[300px] items-center justify-center">
-            <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-          </div>
-        ) : data.length === 0 ? (
-          <div className="flex h-[300px] items-center justify-center text-muted-foreground">
-            <AlertCircle className="mr-2 h-5 w-5" />
-            暂无预算配置数据
-          </div>
-        ) : (
-          <div className="space-y-6">
-            {Object.entries(groupedData).map(([sku, items]) => (
-              <div key={sku} className="space-y-2">
-                <h4 className="text-sm font-medium text-primary">{sku}</h4>
-                <div className="rounded-sm border">
-                  <Table>
-                    <TableHeader>
-                      <TableRow className="bg-muted/50">
-                        <TableHead className="w-[120px]">平台</TableHead>
-                        <TableHead className="w-[160px]">预算金额</TableHead>
-                        <TableHead className="w-[100px]">占比</TableHead>
-                        <TableHead>进度</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {items.map((item) => {
-                        const globalIndex = data.findIndex(
-                          (d) => d.platform === item.platform && d.sku === item.sku
-                        );
-                        return (
-                          <TableRow key={`${item.platform}-${item.sku}`}>
-                            <TableCell className="font-medium">{item.platform}</TableCell>
-                            <TableCell>
-                              <Input
-                                type="number"
-                                min={0}
-                                value={item.amount}
-                                onChange={(e) =>
-                                  handleAmountChange(globalIndex, e.target.value)
-                                }
-                                className="h-8 w-32 rounded-sm font-mono"
-                              />
-                            </TableCell>
-                            <TableCell className="font-mono text-muted-foreground">
-                              {item.proportion.toFixed(2)}%
-                            </TableCell>
-                            <TableCell>
-                              <div className="flex items-center gap-2">
-                                <div className="h-2 flex-1 rounded-sm bg-secondary overflow-hidden">
-                                  <div
-                                    className="h-full bg-primary transition-all duration-300"
-                                    style={{ width: `${Math.min(item.proportion, 100)}%` }}
-                                  />
-                                </div>
-                              </div>
-                            </TableCell>
-                          </TableRow>
-                        );
-                      })}
-                    </TableBody>
-                  </Table>
-                </div>
+    <div className="space-y-6">
+      {/* 汇总统计 */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4" data-ai-section-type="card-stat">
+        <Card className="rounded-sm border-border">
+          <CardContent className="pt-4 pb-3">
+            <p className="text-xs text-muted-foreground">预算总配置数</p>
+            <p className="text-2xl font-bold mt-1">{budgets.length}</p>
+          </CardContent>
+        </Card>
+        <Card className="rounded-sm border-border">
+          <CardContent className="pt-4 pb-3">
+            <p className="text-xs text-muted-foreground">SKU数量</p>
+            <p className="text-2xl font-bold mt-1">{Object.keys(groupedBudgets).length}</p>
+          </CardContent>
+        </Card>
+        <Card className="rounded-sm border-border">
+          <CardContent className="pt-4 pb-3">
+            <p className="text-xs text-muted-foreground">平台数量</p>
+            <p className="text-2xl font-bold mt-1">{PLATFORMS.length}</p>
+          </CardContent>
+        </Card>
+        <Card className="rounded-sm border-border">
+          <CardContent className="pt-4 pb-3">
+            <p className="text-xs text-muted-foreground">总预算金额</p>
+            <p className="text-2xl font-bold mt-1">
+              {formatAmount(budgets.reduce((sum, item) => sum + item.amount, 0))}
+            </p>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* 按SKU分组的预算列表 */}
+      <div className="space-y-4">
+        {Object.entries(groupedBudgets).map(([sku, items]) => (
+          <Card key={sku} className="rounded-sm border-border">
+            <CardHeader className="pb-3">
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-base font-semibold">{sku}</CardTitle>
+                <span className="text-sm text-muted-foreground">
+                  总计: {formatAmount(skuTotals[sku] || 0)}
+                </span>
               </div>
-            ))}
-          </div>
-        )}
-      </CardContent>
-    </Card>
+            </CardHeader>
+            <CardContent className="pt-0">
+              <div className="overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow className="hover:bg-transparent">
+                      <TableHead className="w-[120px]">平台</TableHead>
+                      <TableHead className="text-right">预算金额</TableHead>
+                      <TableHead className="text-right">占比</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {items.map((item) => (
+                      <TableRow key={`${item.platform}-${item.sku}`}>
+                        <TableCell className="font-medium">{item.platform}</TableCell>
+                        <TableCell className="text-right font-mono">
+                          {formatAmount(item.amount)}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <span className={`text-sm ${
+                            item.proportion > 30 ? 'text-warning font-medium' : ''
+                          }`}>
+                            {item.proportion.toFixed(1)}%
+                          </span>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+    </div>
   );
 };
 
 // ==================== 主页面组件 ====================
-const Config: React.FC = () => {
+const ConfigPage: React.FC = () => {
   const [month, setMonth] = useState<string>(getCurrentMonth());
   const [budgets, setBudgets] = useState<BudgetWithProportion[]>([]);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [batchLoading, setBatchLoading] = useState(false);
-
-  // 计算总预算
-  const totalBudget = useMemo(() => {
-    return budgets.reduce((sum, item) => sum + item.amount, 0);
-  }, [budgets]);
 
   // 加载预算数据
   const loadBudgets = useCallback(async () => {
@@ -410,15 +572,13 @@ const Config: React.FC = () => {
   const handleSave = async () => {
     setSaving(true);
     try {
-      const records = budgets.map((item) => ({
-        platform: item.platform,
-        sku: item.sku,
-        amount: item.amount,
-      }));
-
       await axiosForBackend.post('/api/budgets', {
         month,
-        records,
+        records: budgets.map((item) => ({
+          platform: item.platform,
+          sku: item.sku,
+          amount: item.amount,
+        })),
       });
 
       toast.success('预算配置保存成功');
@@ -435,20 +595,23 @@ const Config: React.FC = () => {
   const handleBatchAllocate = async (data: BatchConfigFormData) => {
     setBatchLoading(true);
     try {
-      // 将百分比转换为小数
-      const platformRatioDecimal = Object.fromEntries(
-        Object.entries(data.platformRatios).map(([k, v]) => [k, v / 100])
-      );
-      
-      // 将万元转换为元
-      const skuTotalInYuan = Object.fromEntries(
-        Object.entries(data.skuBudgets).map(([k, v]) => [k, v * 10000])
-      );
-      
-      const response = await axiosForBackend.post('/api/budgets/batch-allocate', {
+      // 转换数据结构
+      const skuTotal: Record<string, number> = {};
+      const platformRatio: Record<string, Record<string, number>> = {};
+
+      for (const config of data.skuConfigs) {
+        // 万元转元
+        skuTotal[config.sku] = config.budget * 10000;
+        // 百分比转小数
+        platformRatio[config.sku] = Object.fromEntries(
+          Object.entries(config.platformRatios).map(([k, v]) => [k, v / 100])
+        );
+      }
+
+      await axiosForBackend.post('/api/budgets/batch-allocate', {
         month,
-        skuTotal: skuTotalInYuan,
-        platformRatio: platformRatioDecimal,
+        skuTotal,
+        platformRatio,
       });
 
       toast.success('批量分配成功');
@@ -490,16 +653,33 @@ const Config: React.FC = () => {
       />
 
       {/* 明细配置列表 */}
-      <BudgetConfigTable
-        data={budgets}
-        onDataChange={setBudgets}
-        loading={loading}
-        onSave={handleSave}
-        saving={saving}
-        totalBudget={totalBudget}
-      />
+      <div className="space-y-4">
+        <div className="flex items-center justify-between">
+          <h2 className="text-lg font-semibold">预算明细</h2>
+          <Button
+            onClick={handleSave}
+            disabled={saving}
+            className="rounded-sm"
+          >
+            {saving ? (
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            ) : (
+              <Save className="mr-2 h-4 w-4" />
+            )}
+            保存配置
+          </Button>
+        </div>
+
+        <BudgetListSection
+          month={month}
+          budgets={budgets}
+          loading={loading}
+          onSave={handleSave}
+          saving={saving}
+        />
+      </div>
     </div>
   );
 };
 
-export default Config;
+export default ConfigPage;

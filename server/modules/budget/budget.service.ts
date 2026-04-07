@@ -76,7 +76,7 @@ export class BudgetService {
 
   /**
    * 按比例批量分配预算
-   * 先设置SKU总预算，再设置各平台分配比例
+   * 每个SKU单独配置平台分配比例
    */
   async batchAllocate(request: BatchAllocateRequest): Promise<BatchAllocateResponse> {
     const { month, skuTotal, platformRatio } = request;
@@ -86,8 +86,11 @@ export class BudgetService {
     for (const [skuName, skuAmount] of Object.entries(skuTotal)) {
       if (skuAmount <= 0) continue;
 
+      // 获取该SKU的平台比例配置
+      const skuPlatformRatios = platformRatio[skuName] || {};
+      
       // 计算该SKU在各平台的分配
-      for (const [platformName, ratio] of Object.entries(platformRatio)) {
+      for (const [platformName, ratio] of Object.entries(skuPlatformRatios)) {
         if (ratio <= 0) continue;
 
         const amount = Math.round(skuAmount * ratio * 100) / 100;

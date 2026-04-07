@@ -42,7 +42,7 @@ export interface SaveBudgetsResponse {
 export interface BatchAllocateRequest {
   month: string;
   skuTotal: Record<string, number>;
-  platformRatio: Record<string, number>;
+  platformRatio: Record<string, Record<string, number>>;
 }
 
 export type BatchAllocateResponse = Budget[];
