@@ -83,8 +83,8 @@ const getCurrentMonth = (): string => {
 };
 
 // 计算平台比例总和
-const calculateTotalRatio = (ratios: Record<string, number>): number => {
-  return Object.values(ratios).reduce((a, b) => a + b, 0);
+const calculateTotalRatio = (ratios: Record<string, number | string>): number => {
+  return Object.values(ratios).reduce<number>((sum, val) => sum + Number(val || 0), 0);
 };
 
 // ==================== 批量配置区组件 ====================
