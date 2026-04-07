@@ -386,6 +386,7 @@ const ConsumptionTrendChart: React.FC<{
 
 // ==================== 主页面 ====================
 const Dashboard: React.FC = () => {
+  logger.info('Dashboard component rendering');
   const [month, setMonth] = useState<string>(getCurrentMonth());
   const [overview, setOverview] = useState<GetOverviewResponse | null>(null);
   const [platformComparison, setPlatformComparison] =
