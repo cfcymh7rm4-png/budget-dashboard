@@ -5,7 +5,7 @@ import { z } from 'zod';
 import { axiosForBackend } from '@lark-apaas/client-toolkit/utils/getAxiosForBackend';
 import { logger } from '@lark-apaas/client-toolkit/logger';
 
-import { PLATFORMS, SKUS } from '@shared/api.interface';
+import { PLATFORMS, SKUS, type BudgetWithProportion } from '@shared/api.interface';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -96,25 +96,78 @@ const BatchConfigSection: React.FC<BatchConfigSectionProps> = ({
     },
   });
 
-  // 从 localStorage 加载配置
+  // 从后端加载已保存的预算数据
   useEffect(() => {
-    try {
-      const saved = localStorage.getItem(getStorageKey(month));
-      if (saved) {
-        const parsed = JSON.parse(saved) as BatchConfigFormData;
-        form.reset(parsed);
-        // 自动展开所有已保存的SKU
-        if (parsed.skuConfigs?.length > 0) {
-          setExpandedSkus(new Set(parsed.skuConfigs.map(c => c.sku)));
+    const loadBudgetData = async () => {
+      try {
+        const response = await axiosForBackend.get<BudgetWithProportion[]>(`/api/budgets?month=${month}`);
+        const budgets = response.data;
+
+        if (budgets && budgets.length > 0) {
+          // 按SKU分组，计算总预算和平台比例
+          const skuMap = new Map<string, { budget: number; platforms: Map<string, number> }>();
+
+          for (const budget of budgets) {
+            if (!skuMap.has(budget.sku)) {
+              skuMap.set(budget.sku, { budget: 0, platforms: new Map() });
+            }
+            const skuData = skuMap.get(budget.sku)!;
+            skuData.budget += budget.amount;
+            skuData.platforms.set(budget.platform, budget.amount);
+          }
+
+          // 转换为表单格式
+          const skuConfigs: SkuConfigFormData[] = [];
+          for (const [sku, data] of skuMap) {
+            const platformRatios: Record<string, number> = {};
+            for (const platform of PLATFORMS) {
+              const platformAmount = data.platforms.get(platform) || 0;
+              platformRatios[platform] = data.budget > 0 ? (platformAmount / data.budget) * 100 : 0;
+            }
+
+            skuConfigs.push({
+              sku,
+              budget: data.budget / 10000, // 元转万元
+              platformRatios,
+            });
+          }
+
+          form.reset({ skuConfigs });
+          setExpandedSkus(new Set(skuConfigs.map(c => c.sku)));
+        } else {
+          // 后端没有数据，尝试从 localStorage 加载
+          const saved = localStorage.getItem(getStorageKey(month));
+          if (saved) {
+            const parsed = JSON.parse(saved) as BatchConfigFormData;
+            form.reset(parsed);
+            if (parsed.skuConfigs?.length > 0) {
+              setExpandedSkus(new Set(parsed.skuConfigs.map(c => c.sku)));
+            }
+          } else {
+            form.reset({ skuConfigs: [] });
+            setExpandedSkus(new Set());
+          }
         }
-      } else {
-        form.reset({ skuConfigs: [] });
-        setExpandedSkus(new Set());
+      } catch (error) {
+        logger.error('加载预算数据失败:', String(error));
+        // 出错时尝试从 localStorage 加载
+        try {
+          const saved = localStorage.getItem(getStorageKey(month));
+          if (saved) {
+            const parsed = JSON.parse(saved) as BatchConfigFormData;
+            form.reset(parsed);
+            if (parsed.skuConfigs?.length > 0) {
+              setExpandedSkus(new Set(parsed.skuConfigs.map(c => c.sku)));
+            }
+          }
+        } catch (e) {
+          logger.error('加载本地配置失败:', String(e));
+        }
       }
-    } catch (error) {
-      logger.error('加载本地配置失败:', String(error));
-    }
-    setIsLoaded(true);
+      setIsLoaded(true);
+    };
+
+    loadBudgetData();
   }, [month, form]);
 
   // 监听表单变化并保存到 localStorage
