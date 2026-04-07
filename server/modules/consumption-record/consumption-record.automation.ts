@@ -3,7 +3,7 @@ import { DRIZZLE_DATABASE, type PostgresJsDatabase, CapabilityService } from '@l
 import { Automation, BindTrigger } from '@lark-apaas/fullstack-nestjs-core';
 import { sql } from 'drizzle-orm';
 
-const PLUGIN_INSTANCE_ID = 'feishu_bitable_import_daily_cost_data_1';
+const PLUGIN_INSTANCE_ID = 'feishu_bitable_import_daily_consumption_data_1';
 
 @Automation()
 @Injectable()
@@ -148,5 +148,15 @@ export class ConsumptionRecordAutomationService {
       this.logger.error('同步多维表格数据失败:', error);
       throw error;
     }
+  }
+
+  /**
+   * 每天中午12点自动从多维表格导入数据
+   */
+  @BindTrigger('daily_bitable_import')
+  async dailyImportFromBitable() {
+    this.logger.log('开始执行每日定时导入任务...');
+    await this.syncFromBitable();
+    this.logger.log('每日定时导入任务执行完成');
   }
 }
