@@ -568,6 +568,7 @@ const BatchConfigSection: React.FC<BatchConfigSectionProps> = ({
 
 // ==================== 主页面组件 ====================
 const ConfigPage: React.FC = () => {
+  logger.info('ConfigPage component rendering');
   const [month, setMonth] = useState<string>(getCurrentMonth());
   const [batchLoading, setBatchLoading] = useState(false);
 
