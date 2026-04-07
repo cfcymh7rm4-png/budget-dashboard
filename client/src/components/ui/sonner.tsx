@@ -22,25 +22,25 @@ function Toaster({ className, style, icons, ...props }: ToasterProps) {
         success: (
           <CircleCheckIcon
             fill="currentColor"
-            className="size-4 text-success [&>:not(circle)]:stroke-(--normal-bg)"
+            className="size-4 text-success"
           />
         ),
         info: (
           <InfoIcon
             fill="currentColor"
-            className="size-4 text-info [&>:not(circle)]:stroke-(--normal-bg)"
+            className="size-4 text-info"
           />
         ),
         warning: (
           <CircleAlertIcon
             fill="currentColor"
-            className="size-4 text-warning [&>:not(circle)]:stroke-(--normal-bg)"
+            className="size-4 text-warning"
           />
         ),
         error: (
           <CircleXIcon
             fill="currentColor"
-            className="size-4 text-destructive [&>:not(circle)]:stroke-(--normal-bg)"
+            className="size-4 text-destructive"
           />
         ),
         close: <XIcon className="size-4 text-accent-foreground" />,
