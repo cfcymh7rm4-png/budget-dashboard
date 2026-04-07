@@ -7,46 +7,78 @@
   "icon": "",
   "paramsSchema": {},
   "formValue": {
-    "appToken": "UFtdb3zgras17usfp4pcyWA9n9d",
-    "tableID": "tblEXktIbA7w4JCk",
     "owner": "bot",
     "tips": "调用searchRecords Action查询每日消耗数据，支持获取日期、平台、SKU、消耗金额等字段",
     "fields": [
       {
-        "id": "fld_date",
+        "type": 1,
+        "bizType": "Text",
+        "readable": false,
+        "writeable": false,
+        "id": "fldoSIf2lU",
+        "name": "序号"
+      },
+      {
+        "writeable": false,
+        "id": "fldRebMlz3",
+        "name": "SourceID",
+        "type": 1,
+        "bizType": "Text",
+        "readable": true
+      },
+      {
+        "writeable": false,
+        "id": "fldjJrWQwf",
         "name": "日期",
         "type": 5,
         "bizType": "DateTime",
+        "readable": true
+      },
+      {
+        "bizType": "Text",
+        "id": "fldmVimbcu",
+        "name": "平台",
+        "type": 1,
         "readable": true,
         "writeable": false
       },
       {
+        "name": "SKU",
         "readable": true,
         "writeable": false,
-        "id": "fld_platform",
-        "name": "平台",
-        "type": 1,
-        "bizType": "Text"
-      },
-      {
-        "name": "SKU",
         "type": 1,
         "bizType": "Text",
-        "readable": true,
-        "writeable": false,
-        "id": "fld_sku"
+        "id": "flddXvZRi6"
       },
       {
-        "name": "消耗金额",
-        "type": 2,
-        "bizType": "Currency",
+        "type": 1,
+        "bizType": "Text",
+        "id": "fldkoitNKl",
+        "readable": false,
+        "writeable": false,
+        "name": "投放目标"
+      },
+      {
+        "bizType": "Text",
+        "readable": false,
+        "writeable": false,
+        "id": "fldtAbeXsw",
+        "name": "运营",
+        "type": 1
+      },
+      {
         "readable": true,
         "writeable": false,
-        "id": "fld_cost_amount"
+        "name": "消耗金额",
+        "type": 1,
+        "bizType": "Text",
+        "id": "fldy6HbTYw"
       }
-    ]
+    ],
+    "appToken": "UFtdb3zgras17usfp4pcyWA9n9d",
+    "tableID": "tblEXktIbA7w4JCk"
   },
   "createdAt": 1775208015394,
-  "updatedAt": 1775208015394,
+  "updatedAt": 1775212998682,
   "createdBy": 7354933799552172036
 }

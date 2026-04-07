@@ -32,14 +32,13 @@ export interface FeishuBitableImportDailyCostData1Output {
   records: {
   id: string;
   record: {
-  消耗: number;
+  SourceID: {
+  text: string;
+};
   日期: number;
-  平台: {
-  text: string;
-};
-  产品: {
-  text: string;
-};
+  平台: unknown;
+  SKU: unknown;
+  消耗金额: unknown;
 };
 }[];
   /** 是否还有更多数据 */
