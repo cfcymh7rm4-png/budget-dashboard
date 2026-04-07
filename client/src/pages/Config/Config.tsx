@@ -607,7 +607,7 @@ const ConfigPage: React.FC = () => {
   };
 
   return (
-    <div className="space-y-6 max-w-[1200px]">
+    <div className="space-y-6 max-w-[1200px] bg-card p-6 rounded-sm border border-border">
       {/* 页面标题 */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div className="flex items-center gap-2">
@@ -633,8 +633,6 @@ const ConfigPage: React.FC = () => {
         onBatchAllocate={handleBatchAllocate}
         loading={batchLoading}
       />
-
-
     </div>
   );
 };
