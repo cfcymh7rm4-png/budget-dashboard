@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useCallback } from 'react';
+import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm, useFieldArray, useWatch } from 'react-hook-form';
 import { z } from 'zod';
@@ -77,6 +77,9 @@ interface BatchConfigSectionProps {
   loading: boolean;
 }
 
+// localStorage key
+const getStorageKey = (month: string) => `budget_config_${month}`;
+
 const BatchConfigSection: React.FC<BatchConfigSectionProps> = ({
   month,
   onBatchAllocate,
@@ -84,6 +87,7 @@ const BatchConfigSection: React.FC<BatchConfigSectionProps> = ({
 }) => {
   const [selectedSku, setSelectedSku] = useState<string>('');
   const [expandedSkus, setExpandedSkus] = useState<Set<string>>(new Set());
+  const [isLoaded, setIsLoaded] = useState(false);
 
   const form = useForm<BatchConfigFormData>({
     resolver: zodResolver(batchConfigSchema),
@@ -91,6 +95,39 @@ const BatchConfigSection: React.FC<BatchConfigSectionProps> = ({
       skuConfigs: [],
     },
   });
+
+  // 从 localStorage 加载配置
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem(getStorageKey(month));
+      if (saved) {
+        const parsed = JSON.parse(saved) as BatchConfigFormData;
+        form.reset(parsed);
+        // 自动展开所有已保存的SKU
+        if (parsed.skuConfigs?.length > 0) {
+          setExpandedSkus(new Set(parsed.skuConfigs.map(c => c.sku)));
+        }
+      } else {
+        form.reset({ skuConfigs: [] });
+        setExpandedSkus(new Set());
+      }
+    } catch (error) {
+      logger.error('加载本地配置失败:', String(error));
+    }
+    setIsLoaded(true);
+  }, [month, form]);
+
+  // 监听表单变化并保存到 localStorage
+  const watchedValues = useWatch({ control: form.control, name: 'skuConfigs' });
+  useEffect(() => {
+    if (!isLoaded) return;
+    try {
+      const data = form.getValues();
+      localStorage.setItem(getStorageKey(month), JSON.stringify(data));
+    } catch (error) {
+      logger.error('保存本地配置失败:', String(error));
+    }
+  }, [watchedValues, month, isLoaded, form]);
 
   const { fields, append, remove, update } = useFieldArray({
     control: form.control,
@@ -165,6 +202,8 @@ const BatchConfigSection: React.FC<BatchConfigSectionProps> = ({
       skuConfigs: [],
     });
     setExpandedSkus(new Set());
+    // 清除本地缓存
+    localStorage.removeItem(getStorageKey(month));
     toast.info('已重置为默认值');
   };
 
@@ -496,6 +535,8 @@ const ConfigPage: React.FC = () => {
         platformRatio,
       });
 
+      // 清除本地缓存
+      localStorage.removeItem(getStorageKey(month));
       toast.success('批量分配成功');
     } catch (error) {
       toast.error('批量分配失败');
