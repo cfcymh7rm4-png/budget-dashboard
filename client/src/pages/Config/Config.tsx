@@ -85,10 +85,10 @@ const BatchConfigSection: React.FC<BatchConfigSectionProps> = ({
   });
 
   const handleSubmit = async (data: BatchConfigFormData) => {
-    // 验证比例总和是否为1
+    // 验证比例总和是否为100%
     const totalRatio = Object.values(data.platformRatios).reduce((a, b) => a + b, 0);
-    if (Math.abs(totalRatio - 1) > 0.001) {
-      toast.error('平台比例总和必须等于1（100%）');
+    if (Math.abs(totalRatio - 100) > 0.1) {
+      toast.error('平台比例总和必须等于100%');
       return;
     }
     await onBatchAllocate(data);
@@ -99,6 +99,7 @@ const BatchConfigSection: React.FC<BatchConfigSectionProps> = ({
       skuBudgets: Object.fromEntries(SKUS.map((s) => [s, 0])),
       platformRatios: Object.fromEntries(PLATFORMS.map((p) => [p, 0])),
     });
+    toast.info('已重置为默认值');
   };
 
   return (
@@ -144,7 +145,7 @@ const BatchConfigSection: React.FC<BatchConfigSectionProps> = ({
             {/* 平台比例 */}
             <div className="space-y-3">
               <div className="flex items-center justify-between">
-                <h4 className="text-sm font-medium text-muted-foreground">平台分配比例</h4>
+                <h4 className="text-sm font-medium text-muted-foreground">平台分配比例 (%)</h4>
                 <span className="text-xs text-muted-foreground">
                   总和应为 100%
                 </span>
@@ -159,15 +160,20 @@ const BatchConfigSection: React.FC<BatchConfigSectionProps> = ({
                       <FormItem>
                         <FormLabel className="text-xs">{platform}</FormLabel>
                         <FormControl>
-                          <Input
-                            type="number"
-                            min={0}
-                            max={1}
-                            step={0.01}
-                            placeholder="0.00"
-                            {...field}
-                            className="h-9 rounded-sm"
-                          />
+                          <div className="relative">
+                            <Input
+                              type="number"
+                              min={0}
+                              max={100}
+                              step={1}
+                              placeholder="0"
+                              {...field}
+                              className="h-9 rounded-sm pr-8"
+                            />
+                            <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">
+                              %
+                            </span>
+                          </div>
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -423,10 +429,15 @@ const Config: React.FC = () => {
   const handleBatchAllocate = async (data: BatchConfigFormData) => {
     setBatchLoading(true);
     try {
+      // 将百分比转换为小数
+      const platformRatioDecimal = Object.fromEntries(
+        Object.entries(data.platformRatios).map(([k, v]) => [k, v / 100])
+      );
+      
       const response = await axiosForBackend.post('/api/budgets/batch-allocate', {
         month,
         skuTotal: data.skuBudgets,
-        platformRatio: data.platformRatios,
+        platformRatio: platformRatioDecimal,
       });
 
       toast.success('批量分配成功');
