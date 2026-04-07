@@ -38,32 +38,53 @@ export class ConsumptionRecordService {
     }
 
     try {
-      // 分批插入，每批500条避免 SQL 过长
+      // 分批处理，每批500条
       const BATCH_SIZE = 500;
       let successCount = 0;
       
       for (let i = 0; i < records.length; i += BATCH_SIZE) {
         const batch = records.slice(i, i + BATCH_SIZE);
         
-        // 构建 VALUES 子句
-        const valuesClause = batch.map(r => 
-          `('${r.recordDate}', '${r.platform.replace(/'/g, "''")}', '${r.sku.replace(/'/g, "''")}', ${r.amount}, '多维表格导入', ${r.bitableRecordId ? `'${r.bitableRecordId}'` : 'NULL'})`
-        ).join(',');
+        // 分离有 bitableRecordId 和没有的记录
+        const withId = batch.filter(r => r.bitableRecordId);
+        const withoutId = batch.filter(r => !r.bitableRecordId);
         
-        const query = `
-          INSERT INTO consumption_record (record_date, platform, sku, amount, source, bitable_record_id)
-          VALUES ${valuesClause}
-          ON CONFLICT (bitable_record_id)
-          DO UPDATE SET
-            record_date = EXCLUDED.record_date,
-            platform = EXCLUDED.platform,
-            sku = EXCLUDED.sku,
-            amount = EXCLUDED.amount,
-            source = EXCLUDED.source,
-            _updated_at = CURRENT_TIMESTAMP
-        `;
+        // 1. 处理有 bitableRecordId 的记录 - 使用 INSERT ... ON CONFLICT DO UPDATE
+        if (withId.length > 0) {
+          const valuesClause = withId.map(r => 
+            `('${r.recordDate}', '${r.platform.replace(/'/g, "''")}', '${r.sku.replace(/'/g, "''")}', ${r.amount}, '多维表格导入', '${r.bitableRecordId}')`
+          ).join(',');
+          
+          const query = `
+            INSERT INTO consumption_record (record_date, platform, sku, amount, source, bitable_record_id)
+            VALUES ${valuesClause}
+            ON CONFLICT (bitable_record_id) WHERE bitable_record_id IS NOT NULL
+            DO UPDATE SET
+              record_date = EXCLUDED.record_date,
+              platform = EXCLUDED.platform,
+              sku = EXCLUDED.sku,
+              amount = EXCLUDED.amount,
+              source = EXCLUDED.source,
+              _updated_at = CURRENT_TIMESTAMP
+          `;
+          
+          await this.db.execute(sql.raw(query));
+        }
         
-        await this.db.execute(sql.raw(query));
+        // 2. 处理没有 bitableRecordId 的记录 - 直接 INSERT
+        if (withoutId.length > 0) {
+          const valuesClause = withoutId.map(r => 
+            `('${r.recordDate}', '${r.platform.replace(/'/g, "''")}', '${r.sku.replace(/'/g, "''")}', ${r.amount}, '多维表格导入', NULL)`
+          ).join(',');
+          
+          const query = `
+            INSERT INTO consumption_record (record_date, platform, sku, amount, source, bitable_record_id)
+            VALUES ${valuesClause}
+          `;
+          
+          await this.db.execute(sql.raw(query));
+        }
+        
         successCount += batch.length;
       }
 
