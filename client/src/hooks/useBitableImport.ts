@@ -1,8 +1,15 @@
 import { useState, useCallback } from 'react';
+import { capabilityClient } from '@lark-apaas/client-toolkit';
 import { logger } from '@lark-apaas/client-toolkit/logger';
+import type {
+  FeishuBitableImportDailyCostData1Output,
+  FeishuBitableImportDailyCostData1Input,
+} from '@shared/plugin-types';
 import type { ConsumptionRecord, BatchSaveConsumptionResponse } from '@shared/api.interface';
 import { axiosForBackend } from '@lark-apaas/client-toolkit/utils/getAxiosForBackend';
 import { toast } from 'sonner';
+
+const PLUGIN_INSTANCE_ID = 'feishu_bitable_import_daily_cost_data_1';
 
 // 平台工具名称映射表：将具体工具归拢到所属大平台
 const PLATFORM_TOOL_MAP: Record<string, string> = {

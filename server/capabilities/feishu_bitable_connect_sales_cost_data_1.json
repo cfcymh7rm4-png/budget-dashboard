@@ -1,0 +1,50 @@
+{
+  "id": "feishu_bitable_connect_sales_cost_data_1",
+  "pluginKey": "@official-plugins/feishu-bitable",
+  "pluginVersion": "1.0.18",
+  "name": "连接销售消耗数据多维表格",
+  "description": "连接飞书多维表格中的销售消耗数据表格，包含日期、平台、SKU、消耗金额字段",
+  "icon": "",
+  "paramsSchema": {},
+  "formValue": {
+    "appToken": "F0w2bVJoca8m10sFXRbcD1wRnJg",
+    "tableID": "tblgFdKCoB9zbbMl",
+    "fields": [
+      {
+        "readable": true,
+        "writeable": true,
+        "id": "fldDate",
+        "name": "日期",
+        "type": 5,
+        "bizType": "DateTime"
+      },
+      {
+        "readable": true,
+        "writeable": true,
+        "id": "fldPlatform",
+        "name": "平台",
+        "type": 1,
+        "bizType": "Text"
+      },
+      {
+        "type": 1,
+        "bizType": "Text",
+        "readable": true,
+        "writeable": true,
+        "id": "fldSku",
+        "name": "SKU"
+      },
+      {
+        "id": "fldCost",
+        "name": "消耗金额",
+        "type": 2,
+        "bizType": "Currency",
+        "readable": true,
+        "writeable": true
+      }
+    ]
+  },
+  "createdAt": 1775529404972,
+  "updatedAt": 1775529404972,
+  "createdBy": 7354933799552172036
+}
