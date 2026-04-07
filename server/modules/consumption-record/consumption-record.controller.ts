@@ -134,8 +134,8 @@ export class ConsumptionRecordController {
           pageSize: 500,
           pageToken,
           sort: [{ fieldName: '日期', desc: true }], // 降序获取最新数据
-          // 注意：DateTime 字段不支持 isGreater 配合时间戳筛选
-          // 先获取数据，然后在代码中过滤30天内的记录
+          // 明确指定要获取的字段，包括投放目标
+          fieldNames: ['日期', '平台', 'SKU', '消耗金额', '投放目标', '序号'],
         };
         
         this.logger.log(`正在获取第 ${pageNum} 页数据...`);
