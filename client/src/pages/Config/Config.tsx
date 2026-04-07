@@ -1,10 +1,10 @@
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import React, { useState, useMemo, useCallback } from 'react';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm, useFieldArray } from 'react-hook-form';
 import { z } from 'zod';
 import { axiosForBackend } from '@lark-apaas/client-toolkit/utils/getAxiosForBackend';
 import { logger } from '@lark-apaas/client-toolkit/logger';
-import type { BudgetWithProportion } from '@shared/api.interface';
+
 import { PLATFORMS, SKUS } from '@shared/api.interface';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -24,20 +24,11 @@ import {
   FormLabel,
   FormMessage,
 } from '@/components/ui/form';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
+
 import {
   Settings,
-  Save,
   Calculator,
   Loader2,
-  AlertCircle,
   ChevronDown,
   ChevronRight,
   Trash2,
@@ -68,15 +59,6 @@ type SkuConfigFormData = z.infer<typeof skuConfigSchema>;
 type BatchConfigFormData = z.infer<typeof batchConfigSchema>;
 
 // ==================== 工具函数 ====================
-const formatAmount = (amount: number): string => {
-  return new Intl.NumberFormat('zh-CN', {
-    style: 'currency',
-    currency: 'CNY',
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0,
-  }).format(amount);
-};
-
 const getCurrentMonth = (): string => {
   const now = new Date();
   return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
@@ -386,210 +368,10 @@ const BatchConfigSection: React.FC<BatchConfigSectionProps> = ({
   );
 };
 
-// ==================== 预算明细列表组件 ====================
-interface BudgetListSectionProps {
-  month: string;
-  budgets: BudgetWithProportion[];
-  loading: boolean;
-  onSave: () => Promise<void>;
-  saving: boolean;
-}
-
-const BudgetListSection: React.FC<BudgetListSectionProps> = ({
-  month,
-  budgets,
-  loading,
-  onSave,
-  saving,
-}) => {
-  // 按SKU分组
-  const groupedBudgets = useMemo(() => {
-    const groups: Record<string, BudgetWithProportion[]> = {};
-    budgets.forEach((item) => {
-      if (!groups[item.sku]) {
-        groups[item.sku] = [];
-      }
-      groups[item.sku].push(item);
-    });
-    return groups;
-  }, [budgets]);
-
-  // 计算SKU总计
-  const skuTotals = useMemo(() => {
-    const totals: Record<string, number> = {};
-    Object.entries(groupedBudgets).forEach(([sku, items]) => {
-      totals[sku] = items.reduce((sum, item) => sum + item.amount, 0);
-    });
-    return totals;
-  }, [groupedBudgets]);
-
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center py-12">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-      </div>
-    );
-  }
-
-  if (budgets.length === 0) {
-    return (
-      <div className="text-center py-12 text-muted-foreground">
-        <AlertCircle className="h-12 w-12 mx-auto mb-3 opacity-50" />
-        <p>暂无预算配置</p>
-        <p className="text-sm">请使用上方批量配置功能或手动添加</p>
-      </div>
-    );
-  }
-
-  return (
-    <div className="space-y-6">
-      {/* 汇总统计 */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4" data-ai-section-type="card-stat">
-        <Card className="rounded-sm border-border">
-          <CardContent className="pt-4 pb-3">
-            <p className="text-xs text-muted-foreground">预算总配置数</p>
-            <p className="text-2xl font-bold mt-1">{budgets.length}</p>
-          </CardContent>
-        </Card>
-        <Card className="rounded-sm border-border">
-          <CardContent className="pt-4 pb-3">
-            <p className="text-xs text-muted-foreground">SKU数量</p>
-            <p className="text-2xl font-bold mt-1">{Object.keys(groupedBudgets).length}</p>
-          </CardContent>
-        </Card>
-        <Card className="rounded-sm border-border">
-          <CardContent className="pt-4 pb-3">
-            <p className="text-xs text-muted-foreground">平台数量</p>
-            <p className="text-2xl font-bold mt-1">{PLATFORMS.length}</p>
-          </CardContent>
-        </Card>
-        <Card className="rounded-sm border-border">
-          <CardContent className="pt-4 pb-3">
-            <p className="text-xs text-muted-foreground">总预算金额</p>
-            <p className="text-2xl font-bold mt-1">
-              {formatAmount(budgets.reduce((sum, item) => sum + item.amount, 0))}
-            </p>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* 按SKU分组的预算列表 */}
-      <div className="space-y-4">
-        {Object.entries(groupedBudgets).map(([sku, items]) => (
-          <Card key={sku} className="rounded-sm border-border">
-            <CardHeader className="pb-3">
-              <div className="flex items-center justify-between">
-                <CardTitle className="text-base font-semibold">{sku}</CardTitle>
-                <span className="text-sm text-muted-foreground">
-                  总计: {formatAmount(skuTotals[sku] || 0)}
-                </span>
-              </div>
-            </CardHeader>
-            <CardContent className="pt-0">
-              <div className="overflow-x-auto">
-                <Table>
-                  <TableHeader>
-                    <TableRow className="hover:bg-transparent">
-                      <TableHead className="w-[120px]">平台</TableHead>
-                      <TableHead className="text-right">预算金额</TableHead>
-                      <TableHead className="text-right">占比</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {items.map((item) => (
-                      <TableRow key={`${item.platform}-${item.sku}`}>
-                        <TableCell className="font-medium">{item.platform}</TableCell>
-                        <TableCell className="text-right font-mono">
-                          {formatAmount(item.amount)}
-                        </TableCell>
-                        <TableCell className="text-right">
-                          <span className={`text-sm ${
-                            item.proportion > 30 ? 'text-warning font-medium' : ''
-                          }`}>
-                            {item.proportion.toFixed(1)}%
-                          </span>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </div>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
-    </div>
-  );
-};
-
 // ==================== 主页面组件 ====================
 const ConfigPage: React.FC = () => {
   const [month, setMonth] = useState<string>(getCurrentMonth());
-  const [budgets, setBudgets] = useState<BudgetWithProportion[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
   const [batchLoading, setBatchLoading] = useState(false);
-
-  // 加载预算数据
-  const loadBudgets = useCallback(async () => {
-    setLoading(true);
-    try {
-      const response = await axiosForBackend.get<BudgetWithProportion[]>(
-        '/api/budgets',
-        { params: { month } }
-      );
-      // 构建完整的SKU×平台组合数据
-      const allBudgets: BudgetWithProportion[] = [];
-      for (const platform of PLATFORMS) {
-        for (const sku of SKUS) {
-          // 从后端返回的数据中查找对应的预算
-          const existing = response.data.find(
-            (item) => item.platform === platform && item.sku === sku
-          );
-          allBudgets.push({
-            month,
-            platform,
-            sku,
-            amount: existing?.amount || 0,
-            proportion: existing?.proportion || 0,
-          });
-        }
-      }
-      setBudgets(allBudgets);
-    } catch (error) {
-      toast.error('加载预算数据失败');
-      logger.error('加载预算数据失败:', String(error));
-    } finally {
-      setLoading(false);
-    }
-  }, [month]);
-
-  useEffect(() => {
-    loadBudgets();
-  }, [loadBudgets]);
-
-  // 保存预算配置
-  const handleSave = async () => {
-    setSaving(true);
-    try {
-      await axiosForBackend.post('/api/budgets', {
-        month,
-        records: budgets.map((item) => ({
-          platform: item.platform,
-          sku: item.sku,
-          amount: item.amount,
-        })),
-      });
-
-      toast.success('预算配置保存成功');
-      await loadBudgets();
-    } catch (error) {
-      toast.error('保存预算配置失败');
-      logger.error('保存预算配置失败:', String(error));
-    } finally {
-      setSaving(false);
-    }
-  };
 
   // 批量分配
   const handleBatchAllocate = async (data: BatchConfigFormData) => {
@@ -615,7 +397,6 @@ const ConfigPage: React.FC = () => {
       });
 
       toast.success('批量分配成功');
-      await loadBudgets();
     } catch (error) {
       toast.error('批量分配失败');
       logger.error('批量分配失败:', String(error));
@@ -652,32 +433,7 @@ const ConfigPage: React.FC = () => {
         loading={batchLoading}
       />
 
-      {/* 明细配置列表 */}
-      <div className="space-y-4">
-        <div className="flex items-center justify-between">
-          <h2 className="text-lg font-semibold">预算明细</h2>
-          <Button
-            onClick={handleSave}
-            disabled={saving}
-            className="rounded-sm"
-          >
-            {saving ? (
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-            ) : (
-              <Save className="mr-2 h-4 w-4" />
-            )}
-            保存配置
-          </Button>
-        </div>
 
-        <BudgetListSection
-          month={month}
-          budgets={budgets}
-          loading={loading}
-          onSave={handleSave}
-          saving={saving}
-        />
-      </div>
     </div>
   );
 };
