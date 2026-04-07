@@ -20,44 +20,66 @@ export class ConsumptionRecordService {
 
   /**
    * 批量保存消耗记录（插入或更新）
+   * 使用真正的批量插入优化性能
    */
   async batchSave(request: BatchSaveConsumptionRequest): Promise<BatchSaveConsumptionResponse> {
     const { records } = request;
-    let successCount = 0;
-    let failCount = 0;
-    const errors: Array<{ row: number; message: string }> = [];
-
-    for (let i = 0; i < records.length; i++) {
-      const record = records[i];
-      try {
-        // 使用 ON CONFLICT DO UPDATE 实现插入或更新
-        // 使用 bitable_record_id 作为唯一标识进行冲突处理
-        await this.db.execute(sql`
-          INSERT INTO consumption_record (record_date, platform, sku, amount, source, bitable_record_id)
-          VALUES (${record.recordDate}, ${record.platform}, ${record.sku}, ${record.amount}, '多维表格导入', ${record.bitableRecordId || null})
-          ON CONFLICT (bitable_record_id)
-          DO UPDATE SET
-            record_date = EXCLUDED.record_date,
-            platform = EXCLUDED.platform,
-            sku = EXCLUDED.sku,
-            amount = EXCLUDED.amount,
-            source = EXCLUDED.source,
-            _updated_at = CURRENT_TIMESTAMP
-        `);
-        successCount++;
-      } catch (error) {
-        failCount++;
-        const errorMessage = error instanceof Error ? error.message : '未知错误';
-        errors.push({ row: i + 1, message: errorMessage });
-        this.logger.error(`保存记录失败 [row=${i + 1}]:`, errorMessage);
-      }
+    
+    if (records.length === 0) {
+      return { successCount: 0, failCount: 0, errors: [] };
     }
 
-    return {
-      successCount,
-      failCount,
-      errors,
-    };
+    try {
+      // 使用 Drizzle 的批量插入，配合 onConflictDoUpdate
+      const values = records.map(r => ({
+        recordDate: r.recordDate,
+        platform: r.platform,
+        sku: r.sku,
+        amount: String(r.amount),
+        source: '多维表格导入',
+        bitableRecordId: r.bitableRecordId || null,
+      }));
+
+      // 分批插入，每批500条避免 SQL 过长
+      const BATCH_SIZE = 500;
+      let successCount = 0;
+      
+      for (let i = 0; i < values.length; i += BATCH_SIZE) {
+        const batch = values.slice(i, i + BATCH_SIZE);
+        
+        await this.db.insert(consumptionRecord)
+          .values(batch as any)
+          .onConflictDoUpdate({
+            target: consumptionRecord.bitableRecordId,
+            set: {
+              recordDate: sql`EXCLUDED.record_date`,
+              platform: sql`EXCLUDED.platform`,
+              sku: sql`EXCLUDED.sku`,
+              amount: sql`EXCLUDED.amount`,
+              source: sql`EXCLUDED.source`,
+              updatedAt: sql`CURRENT_TIMESTAMP`,
+            },
+          });
+        
+        successCount += batch.length;
+      }
+
+      this.logger.log(`批量保存完成: 成功 ${successCount} 条`);
+      
+      return {
+        successCount,
+        failCount: 0,
+        errors: [],
+      };
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : '未知错误';
+      this.logger.error('批量保存失败:', errorMessage);
+      return {
+        successCount: 0,
+        failCount: records.length,
+        errors: [{ row: 0, message: errorMessage }],
+      };
+    }
   }
 
   /**

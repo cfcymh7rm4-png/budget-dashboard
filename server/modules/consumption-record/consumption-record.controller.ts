@@ -104,12 +104,12 @@ export class ConsumptionRecordController {
       ninetyDaysAgo.setDate(ninetyDaysAgo.getDate() - 90);
       const startTimestamp = ninetyDaysAgo.getTime();
       
-      // 调用多维表格插件获取记录，限制最多3页（1500条）避免超时
+      // 调用多维表格插件获取记录，限制最多2页（1000条）避免超时
       let pageToken: string | undefined;
       let hasMore = true;
       let totalCount = 0;
       let pageNum = 0;
-      const MAX_PAGES = 3; // 最多获取3页，避免超时
+      const MAX_PAGES = 2; // 最多获取2页，避免504超时
       
       while (hasMore && pageNum < MAX_PAGES) {
         pageNum++;
@@ -136,7 +136,7 @@ export class ConsumptionRecordController {
           total?: number;
         };
         
-        this.logger.log(`插件返回原始数据: ${JSON.stringify(response)}`);
+        // 移除大数据日志避免性能问题
         
         const { records: pageRecords, hasMore: more, pageToken: nextToken, total } = response;
         
