@@ -402,21 +402,22 @@ const Dashboard: React.FC = () => {
   const loadData = async () => {
     setLoading(true);
     try {
+      const timestamp = Date.now();
       const [overviewRes, platformRes, skuRes, trendRes] = await Promise.all([
         axiosForBackend.get<GetOverviewResponse>('/api/dashboard/overview', {
-          params: { month },
+          params: { month, _t: timestamp },
         }),
         axiosForBackend.get<GetPlatformComparisonResponse>(
           '/api/dashboard/platform-comparison',
-          { params: { month } }
+          { params: { month, _t: timestamp } }
         ),
         axiosForBackend.get<GetSkuProportionResponse>(
           '/api/dashboard/sku-proportion',
-          { params: { month } }
+          { params: { month, _t: timestamp } }
         ),
         axiosForBackend.get<GetConsumptionTrendResponse>(
           '/api/dashboard/consumption-trend',
-          { params: { days: 30 } }
+          { params: { days: 30, _t: timestamp } }
         ),
       ]);
 
