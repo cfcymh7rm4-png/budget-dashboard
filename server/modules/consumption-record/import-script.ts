@@ -40,6 +40,7 @@ const CONFIG = {
 const PLATFORM_TOOL_MAPPING: Record<string, string> = {
   'dou+': '抖音',
   '竞价种草通': '抖音',
+  '千川种草通': '抖音',
   '竞价A3': '抖音',
   '热推': '抖音',
   '二次推广': '微信',

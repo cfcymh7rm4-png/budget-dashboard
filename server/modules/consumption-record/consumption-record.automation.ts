@@ -5,6 +5,20 @@ import { sql } from 'drizzle-orm';
 
 const PLUGIN_INSTANCE_ID = 'feishu_bitable_import_daily_consumption_data_1';
 
+// 平台工具名称映射表
+const PLATFORM_TOOL_MAP: Record<string, string> = {
+  'dou+': '抖音',
+  '竞价种草通': '抖音',
+  '千川种草通': '抖音',
+  '竞价A3': '抖音',
+  '热推': '抖音',
+  '二次推广': '微信',
+};
+
+function normalizePlatform(toolName: string): string {
+  return PLATFORM_TOOL_MAP[toolName] || toolName;
+}
+
 @Automation()
 @Injectable()
 export class ConsumptionRecordAutomationService {
@@ -100,7 +114,8 @@ export class ConsumptionRecordAutomationService {
           }
 
           const sku = skuData?.text || '';
-          const platform = platformData?.text || '';
+          const rawPlatform = platformData?.text || '';
+          const platform = normalizePlatform(rawPlatform);
           const bitableRecordId = item.id;
 
           if (platform && sku && amount !== undefined && amount !== null && bitableRecordId) {

@@ -16,6 +16,7 @@ const PLATFORM_TOOL_MAP: Record<string, string> = {
   // 抖音系工具
   'dou+': '抖音',
   '竞价种草通': '抖音',
+  '千川种草通': '抖音',
   '竞价A3': '抖音',
   '热推': '抖音',
   // 微信系工具
