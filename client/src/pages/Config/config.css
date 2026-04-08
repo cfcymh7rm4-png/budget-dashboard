@@ -1,4 +1,4 @@
-/* 预算配置页面样式 - 百分比分配版 */
+/* 预算配置页面样式 - SKU总预算分配到平台 */
 
 .config-container {
   padding: 1rem;
@@ -31,8 +31,8 @@
   width: 140px;
 }
 
-.platform-select {
-  width: 160px;
+.sku-select {
+  width: 180px;
 }
 
 .select-icon {
@@ -63,12 +63,12 @@
   background: white;
 }
 
-.stat-card.platform-total {
+.stat-card.sku-total {
   background: linear-gradient(135deg, #f0fdfa 0%, #ccfbf1 100%);
   border-color: #99f6e4;
 }
 
-.stat-card.global-total {
+.stat-card.platform-count {
   background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
 }
 
@@ -90,7 +90,11 @@
   color: #0f172a;
 }
 
-.platform-budget-input {
+.stat-value.exceed {
+  color: #dc2626;
+}
+
+.sku-budget-input {
   background: transparent;
   border: none;
   padding: 0;
@@ -101,12 +105,12 @@
   width: 100%;
 }
 
-.platform-budget-input:focus {
+.sku-budget-input:focus {
   outline: none;
   box-shadow: none;
 }
 
-.platform-budget-input::placeholder {
+.sku-budget-input::placeholder {
   color: #94a3b8;
   font-size: 1rem;
 }
@@ -157,9 +161,9 @@
   border-radius: 0.25rem;
 }
 
-.percent-total.exceed {
-  color: #dc2626;
-  background: #fef2f2;
+.percent-total.warning {
+  color: #d97706;
+  background: #fef3c7;
 }
 
 /* 空状态 */
@@ -179,14 +183,14 @@
   opacity: 0.5;
 }
 
-/* SKU 配置列表 */
-.sku-config-list {
+/* 平台配置列表 */
+.platform-config-list {
   display: flex;
   flex-direction: column;
   gap: 0.75rem;
 }
 
-.sku-config-item {
+.platform-config-item {
   display: flex;
   align-items: center;
   gap: 1rem;
@@ -197,12 +201,12 @@
   transition: all 0.15s;
 }
 
-.sku-config-item:hover {
+.platform-config-item:hover {
   background: #f1f5f9;
   border-color: #cbd5e1;
 }
 
-.sku-info {
+.platform-info {
   display: flex;
   align-items: center;
   gap: 0.5rem;
@@ -210,14 +214,14 @@
   min-width: 0;
 }
 
-.sku-icon {
+.platform-icon {
   width: 1rem;
   height: 1rem;
   color: #64748b;
   flex-shrink: 0;
 }
 
-.sku-name {
+.platform-name {
   font-size: 0.875rem;
   font-weight: 500;
   color: #1e293b;
@@ -226,7 +230,7 @@
   text-overflow: ellipsis;
 }
 
-.sku-percent {
+.platform-percent {
   width: 100px;
 }
 
@@ -251,7 +255,7 @@
   pointer-events: none;
 }
 
-.sku-amount-calculated {
+.platform-amount-calculated {
   display: flex;
   align-items: center;
   gap: 0.5rem;
@@ -285,7 +289,7 @@
   }
 
   .month-select,
-  .platform-select {
+  .sku-select {
     width: 100%;
   }
 
@@ -293,20 +297,20 @@
     grid-template-columns: 1fr;
   }
 
-  .sku-config-item {
+  .platform-config-item {
     flex-wrap: wrap;
     gap: 0.5rem;
   }
 
-  .sku-info {
+  .platform-info {
     width: 100%;
   }
 
-  .sku-percent {
+  .platform-percent {
     width: calc(50% - 0.5rem);
   }
 
-  .sku-amount-calculated {
+  .platform-amount-calculated {
     width: calc(50% - 0.5rem);
     justify-content: flex-end;
   }
