@@ -19,8 +19,8 @@ jobs:
           node-version: '22'
           cache: 'npm'
       
-      - name: Install dependencies
-        run: npm Install --no-audit --no-fund
+      - name: install dependencies
+        run: npm install --no-audit --no-fund
       
       - name: Build client
         run: npm run build:client
