@@ -16,7 +16,7 @@ import {
   SelectItem,
 } from '@/components/lightweight-ui';
 import { PLATFORMS, SKUS, type BudgetWithProportion } from '@shared/api.interface';
-import { Settings, Store, Package, Loader2, Save, PieChart } from 'lucide-react';
+import { Settings, Store, Package, Loader2, Save, PieChart, Calculator } from 'lucide-react';
 import './config.css';
 
 const getCurrentMonth = (): string => {
@@ -30,7 +30,11 @@ const ConfigPage: React.FC = () => {
   const [budgets, setBudgets] = useState<BudgetWithProportion[]>([]);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [editingRows, setEditingRows] = useState<Map<string, { amount: string }>>(new Map());
+
+  // 平台总预算输入
+  const [platformBudgetInput, setPlatformBudgetInput] = useState<string>('');
+  // SKU百分比输入
+  const [skuPercents, setSkuPercents] = useState<Map<string, string>>(new Map());
 
   const fetchBudgets = async () => {
     setLoading(true);
@@ -38,11 +42,25 @@ const ConfigPage: React.FC = () => {
       const response = await axiosForBackend.get(`/api/budgets?month=${month}`);
       const data = response.data as BudgetWithProportion[];
       setBudgets(data);
-      const newEditing = new Map<string, { amount: string }>();
+
+      // 初始化平台预算输入
+      const platformTotal = data
+        .filter((item) => item.platform === selectedPlatform)
+        .reduce((sum, item) => sum + item.amount, 0);
+      setPlatformBudgetInput(platformTotal > 0 ? String(platformTotal) : '');
+
+      // 初始化SKU百分比
+      const newPercents = new Map<string, string>();
       data.forEach((item) => {
-        newEditing.set(`${item.platform}-${item.sku}`, { amount: String(item.amount) });
+        const key = `${item.platform}-${item.sku}`;
+        if (platformTotal > 0) {
+          const percent = ((item.amount / platformTotal) * 100).toFixed(1);
+          newPercents.set(key, percent);
+        } else {
+          newPercents.set(key, '');
+        }
       });
-      setEditingRows(newEditing);
+      setSkuPercents(newPercents);
     } catch (error) {
       toast.error('加载预算配置失败');
       logger.error('加载预算配置失败:', String(error));
@@ -55,47 +73,97 @@ const ConfigPage: React.FC = () => {
     fetchBudgets();
   }, [month]);
 
+  // 切换平台时更新平台预算输入
+  useEffect(() => {
+    const platformTotal = budgets
+      .filter((item) => item.platform === selectedPlatform)
+      .reduce((sum, item) => sum + item.amount, 0);
+    setPlatformBudgetInput(platformTotal > 0 ? String(platformTotal) : '');
+
+    // 重新计算百分比
+    const newPercents = new Map<string, string>();
+    budgets.forEach((item) => {
+      const key = `${item.platform}-${item.sku}`;
+      if (item.platform === selectedPlatform && platformTotal > 0) {
+        const percent = ((item.amount / platformTotal) * 100).toFixed(1);
+        newPercents.set(key, percent);
+      } else if (item.platform === selectedPlatform) {
+        newPercents.set(key, '');
+      }
+    });
+    setSkuPercents((prev) => {
+      const merged = new Map(prev);
+      newPercents.forEach((value, key) => merged.set(key, value));
+      return merged;
+    });
+  }, [selectedPlatform, budgets]);
+
   // 当前平台的数据
   const platformBudgets = useMemo(() => {
     return budgets.filter((item) => item.platform === selectedPlatform);
   }, [budgets, selectedPlatform]);
 
-  // 当前平台的总预算
+  // 计算平台总预算
   const platformTotal = useMemo(() => {
+    return parseFloat(platformBudgetInput) || 0;
+  }, [platformBudgetInput]);
+
+  // 全局总预算（包含其他平台的原始值）
+  const globalTotal = useMemo(() => {
+    const otherPlatformsTotal = budgets
+      .filter((item) => item.platform !== selectedPlatform)
+      .reduce((sum, item) => sum + item.amount, 0);
+    return otherPlatformsTotal + platformTotal;
+  }, [budgets, selectedPlatform, platformTotal]);
+
+  // 计算实际分配的百分比总和
+  const totalPercent = useMemo(() => {
     return platformBudgets.reduce((sum, item) => {
       const key = `${item.platform}-${item.sku}`;
-      const editData = editingRows.get(key);
-      return sum + (editData ? parseFloat(editData.amount) || 0 : item.amount);
+      const percent = parseFloat(skuPercents.get(key) || '0') || 0;
+      return sum + percent;
     }, 0);
-  }, [platformBudgets, editingRows]);
+  }, [platformBudgets, skuPercents]);
 
-  // 全局总预算
-  const globalTotal = useMemo(() => {
-    return budgets.reduce((sum, item) => {
-      const key = `${item.platform}-${item.sku}`;
-      const editData = editingRows.get(key);
-      return sum + (editData ? parseFloat(editData.amount) || 0 : item.amount);
-    }, 0);
-  }, [budgets, editingRows]);
+  const handlePlatformBudgetChange = (value: string) => {
+    setPlatformBudgetInput(value);
+  };
 
-  const handleInputChange = (key: string, value: string) => {
-    setEditingRows((prev) => {
-      const newMap = new Map(prev);
-      newMap.set(key, { amount: value });
-      return newMap;
-    });
+  const handlePercentChange = (key: string, value: string) => {
+    // 限制输入范围 0-100
+    const numValue = parseFloat(value);
+    if (value === '' || (numValue >= 0 && numValue <= 100)) {
+      setSkuPercents((prev) => {
+        const newMap = new Map(prev);
+        newMap.set(key, value);
+        return newMap;
+      });
+    }
+  };
+
+  const calculateAmount = (percent: string): number => {
+    const p = parseFloat(percent) || 0;
+    return Math.round(platformTotal * (p / 100));
   };
 
   const handleSave = async () => {
     setSaving(true);
     try {
+      // 构建保存数据
       const records = budgets.map((item) => {
         const key = `${item.platform}-${item.sku}`;
-        const editData = editingRows.get(key);
+        if (item.platform === selectedPlatform) {
+          const percent = skuPercents.get(key) || '0';
+          return {
+            platform: item.platform,
+            sku: item.sku,
+            amount: calculateAmount(percent),
+          };
+        }
         return {
           platform: item.platform,
           sku: item.sku,
-          amount: editData ? parseFloat(editData.amount) || 0 : item.amount,
+          amount: item.amount,
         };
       });
 
@@ -157,15 +225,24 @@ const ConfigPage: React.FC = () => {
       {/* 预算统计卡片 */}
       <div className="stats-cards">
         <div className="stat-card platform-total">
-          <div className="stat-label">{selectedPlatform} 预算</div>
-          <div className="stat-value">¥{platformTotal.toLocaleString()}</div>
+          <div className="stat-label">{selectedPlatform} 总预算</div>
+          <div className="stat-value">
+            <Input
+              type="number"
+              min="0"
+              value={platformBudgetInput}
+              onChange={(e) => handlePlatformBudgetChange(e.target.value)}
+              className="platform-budget-input"
+              placeholder="输入金额"
+            />
+          </div>
         </div>
         <div className="stat-card global-total">
           <div className="stat-label">全平台总预算</div>
           <div className="stat-value">¥{globalTotal.toLocaleString()}</div>
         </div>
         <div className="stat-card proportion">
-          <div className="stat-label">占比</div>
+          <div className="stat-label">{selectedPlatform} 占比</div>
           <div className="stat-value">
             {globalTotal > 0 ? ((platformTotal / globalTotal) * 100).toFixed(1) : 0}%
           </div>
@@ -181,8 +258,11 @@ const ConfigPage: React.FC = () => {
         <Card className="config-card">
           <CardHeader>
             <CardTitle className="card-title">
-              <Settings className="title-icon" />
-              {selectedPlatform} - SKU 预算配置
+              <Calculator className="title-icon" />
+              {selectedPlatform} - 预算百分比分配
+              <span className={`percent-total ${totalPercent > 100 ? 'exceed' : ''}`}>
+                (合计: {totalPercent.toFixed(1)}%)
+              </span>
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -195,9 +275,8 @@ const ConfigPage: React.FC = () => {
               <div className="sku-config-list">
                 {platformBudgets.map((item) => {
                   const key = `${item.platform}-${item.sku}`;
-                  const editData = editingRows.get(key);
-                  const amount = editData ? parseFloat(editData.amount) || 0 : item.amount;
-                  const proportion = platformTotal > 0 ? (amount / platformTotal) * 100 : 0;
+                  const percent = skuPercents.get(key) || '';
+                  const amount = calculateAmount(percent);
 
                   return (
                     <div key={key} className="sku-config-item">
@@ -205,19 +284,24 @@ const ConfigPage: React.FC = () => {
                         <Package className="sku-icon" />
                         <span className="sku-name">{item.sku}</span>
                       </div>
-                      <div className="sku-amount">
-                        <Input
-                          type="number"
-                          min="0"
-                          value={editData?.amount ?? String(item.amount)}
-                          onChange={(e) => handleInputChange(key, e.target.value)}
-                          className="amount-input"
-                          placeholder="输入预算金额"
-                        />
+                      <div className="sku-percent">
+                        <div className="percent-input-wrapper">
+                          <Input
+                            type="number"
+                            min="0"
+                            max="100"
+                            step="0.1"
+                            value={percent}
+                            onChange={(e) => handlePercentChange(key, e.target.value)}
+                            className="percent-input"
+                            placeholder="%"
+                          />
+                          <span className="percent-symbol">%</span>
+                        </div>
                       </div>
-                      <div className="sku-proportion">
-                        <PieChart className="proportion-icon" />
-                        <span className="proportion-value">{proportion.toFixed(1)}%</span>
+                      <div className="sku-amount-calculated">
+                        <span className="amount-label">=</span>
+                        <span className="amount-value">¥{amount.toLocaleString()}</span>
                       </div>
                     </div>
                   );

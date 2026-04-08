@@ -1,4 +1,4 @@
-/* 预算配置页面样式 - 平台筛选版 */
+/* 预算配置页面样式 - 百分比分配版 */
 
 .config-container {
   padding: 1rem;
@@ -80,7 +80,7 @@
 .stat-label {
   font-size: 0.75rem;
   color: #64748b;
-  margin-bottom: 0.25rem;
+  margin-bottom: 0.5rem;
 }
 
 .stat-value {
@@ -88,6 +88,27 @@
   font-weight: 600;
   font-family: 'Roboto Mono', monospace;
   color: #0f172a;
+}
+
+.platform-budget-input {
+  background: transparent;
+  border: none;
+  padding: 0;
+  font-size: 1.25rem;
+  font-weight: 600;
+  font-family: 'Roboto Mono', monospace;
+  color: #0f172a;
+  width: 100%;
+}
+
+.platform-budget-input:focus {
+  outline: none;
+  box-shadow: none;
+}
+
+.platform-budget-input::placeholder {
+  color: #94a3b8;
+  font-size: 1rem;
 }
 
 /* 加载 */
@@ -126,6 +147,21 @@
   color: #0d7377;
 }
 
+.percent-total {
+  margin-left: auto;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #0d7377;
+  padding: 0.25rem 0.5rem;
+  background: #f0fdfa;
+  border-radius: 0.25rem;
+}
+
+.percent-total.exceed {
+  color: #dc2626;
+  background: #fef2f2;
+}
+
 /* 空状态 */
 .empty-state {
   display: flex;
@@ -154,15 +190,16 @@
   display: flex;
   align-items: center;
   gap: 1rem;
-  padding: 0.75rem;
+  padding: 0.875rem 1rem;
   border: 1px solid #e2e8f0;
-  border-radius: 0.375rem;
+  border-radius: 0.5rem;
   background: #fafafa;
-  transition: background 0.15s;
+  transition: all 0.15s;
 }
 
 .sku-config-item:hover {
   background: #f1f5f9;
+  border-color: #cbd5e1;
 }
 
 .sku-info {
@@ -189,34 +226,51 @@
   text-overflow: ellipsis;
 }
 
-.sku-amount {
-  width: 160px;
+.sku-percent {
+  width: 100px;
 }
 
-.amount-input {
-  width: 100%;
-  font-family: 'Roboto Mono', monospace;
-}
-
-.sku-proportion {
+.percent-input-wrapper {
+  position: relative;
   display: flex;
   align-items: center;
-  gap: 0.375rem;
-  width: 80px;
+}
+
+.percent-input {
+  width: 100%;
+  padding-right: 1.5rem;
+  font-family: 'Roboto Mono', monospace;
+  text-align: right;
+}
+
+.percent-symbol {
+  position: absolute;
+  right: 0.5rem;
+  color: #64748b;
+  font-size: 0.875rem;
+  pointer-events: none;
+}
+
+.sku-amount-calculated {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  width: 140px;
   justify-content: flex-end;
 }
 
-.proportion-icon {
-  width: 0.875rem;
-  height: 0.875rem;
-  color: #0d7377;
+.amount-label {
+  color: #94a3b8;
+  font-size: 0.875rem;
 }
 
-.proportion-value {
+.amount-value {
   font-size: 0.875rem;
   font-family: 'Roboto Mono', monospace;
   color: #0d7377;
-  font-weight: 500;
+  font-weight: 600;
+  min-width: 80px;
+  text-align: right;
 }
 
 /* 响应式 */
@@ -241,14 +295,19 @@
 
   .sku-config-item {
     flex-wrap: wrap;
+    gap: 0.5rem;
   }
 
-  .sku-amount {
+  .sku-info {
     width: 100%;
-    order: 3;
   }
 
-  .sku-proportion {
-    width: auto;
+  .sku-percent {
+    width: calc(50% - 0.5rem);
+  }
+
+  .sku-amount-calculated {
+    width: calc(50% - 0.5rem);
+    justify-content: flex-end;
   }
 }
