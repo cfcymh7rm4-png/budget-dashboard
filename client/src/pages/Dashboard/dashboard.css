@@ -1,0 +1,180 @@
+/* Dashboard 轻量级样式 */
+
+/* 容器 */
+.dashboard-container {
+  padding: 1rem;
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+/* 头部 */
+.dashboard-header {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+}
+
+.header-left {
+  display: flex;
+  gap: 0.75rem;
+}
+
+.header-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.month-select {
+  width: 140px;
+}
+
+.btn-icon {
+  width: 1rem;
+  height: 1rem;
+  margin-right: 0.5rem;
+}
+
+/* 加载状态 */
+.loading-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 200px;
+}
+
+/* 统计卡网格 */
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+/* 卡片 */
+.dashboard-card {
+  border: 1px solid #e2e8f0;
+  background: white;
+}
+
+.card-content {
+  padding: 1rem;
+}
+
+.stat-card-inner {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+
+.stat-info {
+  flex: 1;
+}
+
+.stat-title {
+  font-size: 0.875rem;
+  color: #64748b;
+  margin: 0 0 0.5rem 0;
+}
+
+.stat-value {
+  font-size: 1.5rem;
+  font-weight: 700;
+  font-family: 'Roboto Mono', monospace;
+  margin: 0 0 0.25rem 0;
+  letter-spacing: -0.025em;
+}
+
+.stat-trend {
+  font-size: 0.75rem;
+  margin: 0;
+}
+
+.stat-icon {
+  padding: 0.5rem;
+  background: #f0fdfa;
+  color: #0d7377;
+  border-radius: 0.25rem;
+}
+
+.stat-icon .icon {
+  width: 1.25rem;
+  height: 1.25rem;
+}
+
+/* 颜色 */
+.text-success { color: #22c55e; }
+.text-danger { color: #ef4444; }
+.text-muted { color: #64748b; }
+
+/* 图表区域 */
+.charts-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+  gap: 1rem;
+}
+
+.chart-card {
+  border: 1px solid #e2e8f0;
+  background: white;
+}
+
+.chart-card.full-width {
+  grid-column: 1 / -1;
+}
+
+.chart-container {
+  height: 300px;
+}
+
+/* 对话框 */
+.dialog-content {
+  max-width: 500px;
+}
+
+.dialog-body {
+  padding: 1rem 0;
+}
+
+.dialog-text {
+  color: #64748b;
+  margin-bottom: 1rem;
+}
+
+.dialog-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+}
+
+/* 动画 */
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.animate-spin {
+  animation: spin 1s linear infinite;
+}
+
+/* 响应式 */
+@media (max-width: 768px) {
+  .dashboard-header {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .header-actions {
+    justify-content: flex-start;
+  }
+
+  .stats-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .charts-grid {
+    grid-template-columns: 1fr;
+  }
+}

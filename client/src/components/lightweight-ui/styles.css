@@ -1,0 +1,52 @@
+/* 轻量级UI组件样式 - 基础变量 */
+:root {
+  --primary: #0d7377;
+  --primary-foreground: #ffffff;
+  --background: #f8fafc;
+  --foreground: #0f172a;
+  --card: #ffffff;
+  --card-foreground: #0f172a;
+  --popover: #ffffff;
+  --popover-foreground: #0f172a;
+  --primary-hover: #0a5c5f;
+  --secondary: #f1f5f9;
+  --secondary-foreground: #0f172a;
+  --muted: #f1f5f9;
+  --muted-foreground: #64748b;
+  --accent: #f0fdfa;
+  --accent-foreground: #0d7377;
+  --destructive: #ef4444;
+  --destructive-foreground: #ffffff;
+  --border: #e2e8f0;
+  --input: #e2e8f0;
+  --ring: #0d7377;
+  --radius: 0;
+  
+  --success: #22c55e;
+  --warning: #f97316;
+  --danger: #ef4444;
+}
+
+/* 基础工具类 */
+.bg-primary { background-color: var(--primary); }
+.text-primary { color: var(--primary); }
+.bg-accent { background-color: var(--accent); }
+.text-accent-foreground { color: var(--accent-foreground); }
+.border-border { border-color: var(--border); }
+.text-muted-foreground { color: var(--muted-foreground); }
+.bg-white { background-color: white; }
+
+/* Focus ring */
+.focus\:ring-primary\/50:focus {
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(13, 115, 119, 0.5);
+}
+
+/* 动画 */
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+.animate-spin {
+  animation: spin 1s linear infinite;
+}
