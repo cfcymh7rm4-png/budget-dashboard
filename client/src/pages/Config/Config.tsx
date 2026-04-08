@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { axiosForBackend } from '@lark-apaas/client-toolkit/utils/getAxiosForBackend';
 import { logger } from '@lark-apaas/client-toolkit/logger';
 import { toast } from 'sonner';
@@ -16,7 +16,7 @@ import {
   SelectItem,
 } from '@/components/lightweight-ui';
 import { PLATFORMS, SKUS, type BudgetWithProportion } from '@shared/api.interface';
-import { Settings, Calculator, Loader2, Save } from 'lucide-react';
+import { Settings, Store, Package, Loader2, Save, PieChart } from 'lucide-react';
 import './config.css';
 
 const getCurrentMonth = (): string => {
@@ -26,6 +26,7 @@ const getCurrentMonth = (): string => {
 
 const ConfigPage: React.FC = () => {
   const [month, setMonth] = useState<string>(getCurrentMonth());
+  const [selectedPlatform, setSelectedPlatform] = useState<string>(PLATFORMS[0]);
   const [budgets, setBudgets] = useState<BudgetWithProportion[]>([]);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -54,11 +55,33 @@ const ConfigPage: React.FC = () => {
     fetchBudgets();
   }, [month]);
 
-  const handleInputChange = (key: string, field: 'amount', value: string) => {
+  // 当前平台的数据
+  const platformBudgets = useMemo(() => {
+    return budgets.filter((item) => item.platform === selectedPlatform);
+  }, [budgets, selectedPlatform]);
+
+  // 当前平台的总预算
+  const platformTotal = useMemo(() => {
+    return platformBudgets.reduce((sum, item) => {
+      const key = `${item.platform}-${item.sku}`;
+      const editData = editingRows.get(key);
+      return sum + (editData ? parseFloat(editData.amount) || 0 : item.amount);
+    }, 0);
+  }, [platformBudgets, editingRows]);
+
+  // 全局总预算
+  const globalTotal = useMemo(() => {
+    return budgets.reduce((sum, item) => {
+      const key = `${item.platform}-${item.sku}`;
+      const editData = editingRows.get(key);
+      return sum + (editData ? parseFloat(editData.amount) || 0 : item.amount);
+    }, 0);
+  }, [budgets, editingRows]);
+
+  const handleInputChange = (key: string, value: string) => {
     setEditingRows((prev) => {
       const newMap = new Map(prev);
-      const current = newMap.get(key) || { amount: '' };
-      newMap.set(key, { ...current, [field]: value });
+      newMap.set(key, { amount: value });
       return newMap;
     });
   };
@@ -90,16 +113,12 @@ const ConfigPage: React.FC = () => {
     }
   };
 
-  const totalBudget = budgets.reduce((sum, item) => {
-    const key = `${item.platform}-${item.sku}`;
-    const editData = editingRows.get(key);
-    return sum + (editData ? parseFloat(editData.amount) || 0 : item.amount);
-  }, 0);
-
   return (
     <div className="config-container">
+      {/* 顶部筛选区 */}
       <div className="config-header">
         <div className="header-left">
+          {/* 月份选择 */}
           <Select value={month} onValueChange={setMonth}>
             <SelectTrigger className="month-select">
               <SelectValue />
@@ -110,12 +129,24 @@ const ConfigPage: React.FC = () => {
               <SelectItem value="2026-02">2026年2月</SelectItem>
             </SelectContent>
           </Select>
+
+          {/* 平台选择 */}
+          <Select value={selectedPlatform} onValueChange={setSelectedPlatform}>
+            <SelectTrigger className="platform-select">
+              <Store className="select-icon" />
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {PLATFORMS.map((platform) => (
+                <SelectItem key={platform} value={platform}>
+                  {platform}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
+
         <div className="header-right">
-          <div className="total-info">
-            <span className="total-label">总预算:</span>
-            <span className="total-value">¥{totalBudget.toLocaleString()}</span>
-          </div>
           <Button onClick={handleSave} isLoading={saving}>
             <Save className="btn-icon" />
             保存配置
@@ -123,6 +154,25 @@ const ConfigPage: React.FC = () => {
         </div>
       </div>
 
+      {/* 预算统计卡片 */}
+      <div className="stats-cards">
+        <div className="stat-card platform-total">
+          <div className="stat-label">{selectedPlatform} 预算</div>
+          <div className="stat-value">¥{platformTotal.toLocaleString()}</div>
+        </div>
+        <div className="stat-card global-total">
+          <div className="stat-label">全平台总预算</div>
+          <div className="stat-value">¥{globalTotal.toLocaleString()}</div>
+        </div>
+        <div className="stat-card proportion">
+          <div className="stat-label">占比</div>
+          <div className="stat-value">
+            {globalTotal > 0 ? ((platformTotal / globalTotal) * 100).toFixed(1) : 0}%
+          </div>
+        </div>
+      </div>
+
+      {/* 配置卡片 */}
       {loading ? (
         <div className="loading-container">
           <Loader2 className="animate-spin" />
@@ -132,47 +182,48 @@ const ConfigPage: React.FC = () => {
           <CardHeader>
             <CardTitle className="card-title">
               <Settings className="title-icon" />
-              预算配置
+              {selectedPlatform} - SKU 预算配置
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="table-wrapper">
-              <table className="config-table">
-                <thead>
-                  <tr>
-                    <th>平台</th>
-                    <th>SKU</th>
-                    <th>预算金额</th>
-                    <th>占比</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {budgets.map((item) => {
-                    const key = `${item.platform}-${item.sku}`;
-                    const editData = editingRows.get(key);
-                    const amount = editData ? parseFloat(editData.amount) || 0 : item.amount;
-                    const proportion = totalBudget > 0 ? (amount / totalBudget) * 100 : 0;
+            {platformBudgets.length === 0 ? (
+              <div className="empty-state">
+                <Package className="empty-icon" />
+                <p>该平台暂无SKU配置</p>
+              </div>
+            ) : (
+              <div className="sku-config-list">
+                {platformBudgets.map((item) => {
+                  const key = `${item.platform}-${item.sku}`;
+                  const editData = editingRows.get(key);
+                  const amount = editData ? parseFloat(editData.amount) || 0 : item.amount;
+                  const proportion = platformTotal > 0 ? (amount / platformTotal) * 100 : 0;
 
-                    return (
-                      <tr key={key}>
-                        <td className="platform-cell">{item.platform}</td>
-                        <td className="sku-cell">{item.sku}</td>
-                        <td className="amount-cell">
-                          <Input
-                            type="number"
-                            min="0"
-                            value={editData?.amount ?? String(item.amount)}
-                            onChange={(e) => handleInputChange(key, 'amount', e.target.value)}
-                            className="amount-input"
-                          />
-                        </td>
-                        <td className="proportion-cell">{proportion.toFixed(1)}%</td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
+                  return (
+                    <div key={key} className="sku-config-item">
+                      <div className="sku-info">
+                        <Package className="sku-icon" />
+                        <span className="sku-name">{item.sku}</span>
+                      </div>
+                      <div className="sku-amount">
+                        <Input
+                          type="number"
+                          min="0"
+                          value={editData?.amount ?? String(item.amount)}
+                          onChange={(e) => handleInputChange(key, e.target.value)}
+                          className="amount-input"
+                          placeholder="输入预算金额"
+                        />
+                      </div>
+                      <div className="sku-proportion">
+                        <PieChart className="proportion-icon" />
+                        <span className="proportion-value">{proportion.toFixed(1)}%</span>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
           </CardContent>
         </Card>
       )}
