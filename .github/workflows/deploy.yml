@@ -1,0 +1,51 @@
+name: Build and Deploy
+
+on:
+  push:
+    branches: [main, master]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+      
+      - name: Install dependencies
+        run: npm ci --no-audit --no-fund
+      
+      - name: Build client
+        run: npm run build:client
+        env:
+          NODE_OPTIONS: '--max-old-space-size=4096'
+          NODE_ENV: production
+      
+      - name: Build server
+        run: npm run build:server
+        env:
+          NODE_ENV: production
+      
+      - name: Create deployment package
+        run: |
+          zip -r deploy.zip dist/ package.json package-lock.json
+      
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: deploy-package
+          path: deploy.zip
+          retention-days: 7
+      
+      - name: Summary
+        run: |
+          echo "✅ 构建成功！"
+          echo "📦 产物: deploy.zip"
+          echo "📥 请在 Actions 页面下载 deploy.zip 并上传到妙搭平台"
