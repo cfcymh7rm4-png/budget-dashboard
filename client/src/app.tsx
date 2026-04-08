@@ -4,7 +4,6 @@ import { Route, Routes } from 'react-router-dom';
 import Layout from './components/Layout';
 import NotFound from './pages/NotFound/NotFound';
 import Dashboard from './pages/Dashboard/Dashboard';
-import Details from './pages/Details/Details';
 import Config from './pages/Config/Config';
 
 const RoutesComponent = () => {
@@ -12,7 +11,6 @@ const RoutesComponent = () => {
     <Routes>
       <Route element={<Layout />}>
         <Route index element={<Dashboard />} />
-        <Route path="details" element={<Details />} />
         <Route path="config" element={<Config />} />
       </Route>
       <Route path="*" element={<NotFound />} />

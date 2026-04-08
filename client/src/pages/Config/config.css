@@ -1,0 +1,153 @@
+/* 预算配置页面样式 */
+
+.config-container {
+  padding: 1rem;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+/* 头部 */
+.config-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.header-left {
+  display: flex;
+  gap: 0.75rem;
+}
+
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.month-select {
+  width: 140px;
+}
+
+.total-info {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.875rem;
+}
+
+.total-label {
+  color: #64748b;
+}
+
+.total-value {
+  font-weight: 600;
+  font-family: 'Roboto Mono', monospace;
+  color: #0d7377;
+}
+
+.btn-icon {
+  width: 1rem;
+  height: 1rem;
+  margin-right: 0.5rem;
+}
+
+/* 加载 */
+.loading-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 300px;
+}
+
+/* 卡片 */
+.config-card {
+  border: 1px solid #e2e8f0;
+  background: white;
+}
+
+.card-title {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 1.125rem;
+}
+
+.title-icon {
+  width: 1.25rem;
+  height: 1.25rem;
+  color: #0d7377;
+}
+
+/* 表格 */
+.table-wrapper {
+  overflow-x: auto;
+}
+
+.config-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.875rem;
+}
+
+.config-table th,
+.config-table td {
+  padding: 0.75rem;
+  text-align: left;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.config-table th {
+  font-weight: 600;
+  color: #64748b;
+  background: #f8fafc;
+}
+
+.config-table tr:hover {
+  background: #f8fafc;
+}
+
+.platform-cell {
+  font-weight: 500;
+}
+
+.sku-cell {
+  color: #64748b;
+}
+
+.amount-cell {
+  width: 150px;
+}
+
+.amount-input {
+  width: 100%;
+}
+
+.proportion-cell {
+  font-family: 'Roboto Mono', monospace;
+  color: #0d7377;
+}
+
+/* 动画 */
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.animate-spin {
+  animation: spin 1s linear infinite;
+}
+
+/* 响应式 */
+@media (max-width: 768px) {
+  .config-header {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .header-right {
+    justify-content: space-between;
+  }
+}
