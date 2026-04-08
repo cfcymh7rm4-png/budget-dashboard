@@ -20,7 +20,7 @@ jobs:
           cache: 'npm'
       
       - name: install dependencies
-        run: npm install --no-audit --no-fund
+        run: npm install --no-audit --no-fund --ignore-scripts
       
       - name: Build client
         run: npm run build:client
